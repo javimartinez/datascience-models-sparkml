@@ -19,14 +19,14 @@ package com.jmartinez.datascience.models.sparkml.examples
 import java.util.concurrent.TimeUnit._
 
 import com.jmartinez.datascience.models.sparkml.models.ZeroRClassifier
-import org.apache.log4j.{ Level, Logger }
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.{ StringIndexer, VectorAssembler, VectorIndexer }
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler, VectorIndexer}
 import org.apache.spark.sql.SparkSession
 
-object ZeroRExample {
+object ZeroRClassifierExample {
 
   def main(args: Array[String]) {
 
