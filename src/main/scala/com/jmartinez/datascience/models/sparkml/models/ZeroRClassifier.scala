@@ -73,7 +73,9 @@ final class ZeroRClassifierModel(override val uid: String, val predictedLabel: D
 
 }
 
-final class ZeroRClassifier(override val uid: String) extends Estimator[ZeroRClassifierModel] with ZeroRParams {
+final class ZeroRClassifier(override val uid: String)
+    extends Estimator[ZeroRClassifierModel]
+    with ZeroRParams {
 
   def this() = this(Identifiable.randomUID("zeroR"))
 

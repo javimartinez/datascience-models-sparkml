@@ -25,7 +25,6 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{ StringIndexer, VectorAssembler, VectorIndexer }
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types.StructType
 
 object ZeroRExample {
 
@@ -49,7 +48,8 @@ object ZeroRExample {
         .load("/Users/Javi/Development/data/iris.csv")
 
     // Transformer
-    val assembler = new VectorAssembler().setInputCols(dataDF.columns.dropRight(1)).setOutputCol("features")
+    val assembler =
+      new VectorAssembler().setInputCols(dataDF.columns.dropRight(1)).setOutputCol("features")
 
     // Index labels, adding metadata to the label column.
     // Fit on whole dataset to include all labels in index.
@@ -68,7 +68,10 @@ object ZeroRExample {
     val indexedDataset = prepareDataPipeline.fit(dataDF).transform(dataDF)
 
     val zeroR =
-      new ZeroRClassifier().setLabelCol("label").setFeaturesCol("indexedFeatures").setPredictionCol("predictedLabel")
+      new ZeroRClassifier()
+        .setLabelCol("label")
+        .setFeaturesCol("indexedFeatures")
+        .setPredictionCol("predictedLabel")
 
     val (trainingDuration, zeroRModel) = time(zeroR.fit(indexedDataset))
 
