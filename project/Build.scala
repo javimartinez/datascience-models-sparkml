@@ -47,4 +47,5 @@ object Build extends AutoPlugin {
            // Header settings
            headers := Map("scala" -> Apache2_0("2016", "jmartinez"))
     )
+
 }
