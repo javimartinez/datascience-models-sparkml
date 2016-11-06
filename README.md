@@ -20,4 +20,8 @@ This code is open source software licensed under the [Apache 2.0 License](http:/
 
 ## Datasets
 
-letter ,connect-4, shuttle, fars y póker 
+letter ,connect-4, shuttle, fars y póker
+ 
+## File Paths 
+
+"/Users/Javi/Development/data/tfg/iris.dat"
