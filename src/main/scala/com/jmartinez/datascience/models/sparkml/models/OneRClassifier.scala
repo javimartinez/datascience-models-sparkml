@@ -1,3 +1,19 @@
+/*
+ * Copyright 2016 jmartinez
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.jmartinez.datascience.models.sparkml.models
 
 /*
@@ -23,6 +39,7 @@ import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util._
 import org.apache.spark.ml.{ Estimator, Model, OneRParams }
+import org.apache.spark.sql.functions.udf
 import org.apache.spark.sql.types.{ DoubleType, StructField, StructType }
 import org.apache.spark.sql.{ DataFrame, _ }
 
@@ -40,7 +57,7 @@ case class OneRule(attribute: Attribute,
       case AttributeType.Binary =>
         attribute.asInstanceOf[BinaryAttribute].values.get
       case _ =>
-        throw new Exception("hola!!! no macheo con un attributo correcto")
+        throw new Exception("The attribute type is not correct ")
     }
 
     val attributeLabelValues = labelAttribute.attrType match {
@@ -49,7 +66,7 @@ case class OneRule(attribute: Attribute,
       case AttributeType.Binary =>
         labelAttribute.asInstanceOf[BinaryAttribute].values.get
       case _ =>
-        throw new Exception("hola!!! no macheo con un attributo correcto")
+        throw new Exception("The attribute type is not correct ")
     }
 
     predictedLabelAttribute.map {
@@ -57,7 +74,8 @@ case class OneRule(attribute: Attribute,
         val attributeValue = attributeValues(aValueIndex.toInt)
         val labelValue     = attributeLabelValues(lValueIndex.toInt)
 
-        s"If ${ attribute.name.getOrElse("x") } = $attributeValue THEN ${ labelAttribute.name.getOrElse("x") } = $labelValue \n"
+        s"If ${ attribute.name.getOrElse("x") } = $attributeValue THEN ${ labelAttribute.name
+          .getOrElse("x") } = $labelValue \n"
 
     }.foldLeft("")(_ + _)
 
@@ -81,11 +99,22 @@ final class OneRClassifierModel(override val uid: String, val rule: OneRule)
   /**
     * Transforms the input dataset.
     */
-  override def transform(dataset: Dataset[_]): DataFrame = ??? //
+  override def transform(dataset: Dataset[_]): DataFrame = {
+
+    val classifyInstance = udf { (instanceFeatures: Vector) =>
+      val attributeValueToClassify = instanceFeatures(rule.attribute.index.get)
+
+      rule.predictedLabelAttribute(attributeValueToClassify)
+    }
+
+    dataset.withColumn($ { predictionCol }, classifyInstance(dataset($ { featuresCol })))
+  }
 
 }
 
-final class OneRClassifier(override val uid: String) extends Estimator[OneRClassifierModel] with OneRParams {
+final class OneRClassifier(override val uid: String)
+    extends Estimator[OneRClassifierModel]
+    with OneRParams {
 
   def this() = this(Identifiable.randomUID("oneR"))
 
@@ -109,7 +138,8 @@ final class OneRClassifier(override val uid: String) extends Estimator[OneRClass
 
     val dfToTrain: DataFrame = dataset.select($(featuresCol), $(labelCol))
 
-    val attributes = attributesOption.getOrElse(default = throw new Exception("The attributes are missing"))
+    val attributes =
+      attributesOption.getOrElse(default = throw new Exception("The attributes are missing"))
 
     val labelAttribte = Attribute.fromStructField(schema($(labelCol)))
 
@@ -119,14 +149,10 @@ final class OneRClassifier(override val uid: String) extends Estimator[OneRClass
       case _: NumericAttribute | UnresolvedAttribute => None
     }
 
-    println(s"The number of classes in this DataSet is: $numClasses.get")
-
-    val x = dfToTrain.rdd.map(row => row.toSeq).cache()
-
-    x.foreach(println)
+    val dataToTrainRDD = dfToTrain.rdd // TODO: cache this RDD ???
 
     val output = attributes.map { attribute =>
-      val partialDF = dfToTrain.rdd.map {
+      val partialDF = dataToTrainRDD.map {
         case Row(features: Vector, label: Double) =>
           val attributeValue = features.toArray(attribute.index.get)
           val counter        = Array.fill[Int](numClasses.get) { 0 }
@@ -137,7 +163,7 @@ final class OneRClassifier(override val uid: String) extends Estimator[OneRClass
 
       val result = partialDF.reduceByKey {
         case (v1: Array[Int], v2: Array[Int]) =>
-          v1.zip(v2).map {
+          v1.zip(v2).map { //TODO: Need Refactor!!
             case (x: Int, y: Int) => x + y
           }
       }
@@ -157,17 +183,10 @@ final class OneRClassifier(override val uid: String) extends Estimator[OneRClass
 
     }
 
-    output.foreach(rule => println(rule.toString))
+    val betterRule = output.maxBy(_.totalScore)
 
-    val betterRule = output.maxBy(onerule => onerule.totalScore)
+    val model = new OneRClassifierModel(uid, betterRule)
 
-    val exampleAttribute = BinaryAttribute.defaultAttr.withName("label")
-
-    val exampleMap = Map[Double, Double]()
-
-    val oneRule = OneRule(exampleAttribute, exampleAttribute, exampleMap, 34.4)
-
-    val model = new OneRClassifierModel(uid, oneRule)
     copyValues(model)
 
   }

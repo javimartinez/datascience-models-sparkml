@@ -1,13 +1,31 @@
+/*
+ * Copyright 2016 jmartinez
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.jmartinez.datascience.models.sparkml.examples
 
+import java.util.concurrent.TimeUnit._
+
+import com.jmartinez.datascience.models.sparkml.keelReader.KeelReader._
 import com.jmartinez.datascience.models.sparkml.models.OneRClassifier
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.attribute.{Attribute, AttributeGroup, NominalAttribute}
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler, VectorIndexer}
 import org.apache.spark.sql.SparkSession
-
 
 object OneRClassifierExample {
 
@@ -17,108 +35,72 @@ object OneRClassifierExample {
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
 
-    val spark = SparkSession
-      .builder()
-      .appName("OneRClassifierExample")
-      .getOrCreate()
-
     // Creates a DataFrame
 
-    val df = spark.read
-      .format("com.databricks.spark.csv")
-      .option("header", "true") // Use first line of all files as header
-      .option("inferSchema", "true") // Automatically infer data types
-      .load("/Users/Javi/Development/data/weatherDataSet.csv")
+    val spark =
+      SparkSession.builder.appName("OneRClassifierExample").getOrCreate()
 
-
-    df.show()
-
-    println(s"The dataTypes are: ${df.dtypes.foreach(tuple => println(tuple))}")
+    // Crates a DataFrame
+    val dataDF = spark.keelFile(args(0))
 
     // Transformer
 
-    val indexer1 = new StringIndexer()
-      .setInputCol("outlook")
-      .setOutputCol("idx_outlook")
+    val (stringIndexers,columns) = dataDF.columns.map { column =>
+      val newColumn = s"idx_${column}"
+      (new StringIndexer().setInputCol(column).setOutputCol(newColumn), newColumn)
+    }.toList.unzip
 
-    val indexer2 = new StringIndexer()
-      .setInputCol("temperature")
-      .setOutputCol("idx_temperature")
+    val assembler =
+      new VectorAssembler().setInputCols(columns.dropRight(1).toArray).setOutputCol("features")
 
-    val indexer3 = new StringIndexer()
-      .setInputCol("humidity")
-      .setOutputCol("idx_humidity")
-
-    val indexer4 = new StringIndexer()
-      .setInputCol("play")
-      .setOutputCol("idx_play")
-
-    val indexerPipeline = new Pipeline()
-      .setStages(Array(indexer1, indexer2, indexer3, indexer4))
-
-    val indexedDF = indexerPipeline.fit(df).transform(df)
-
-    indexedDF.show()
-
-    val attributeValues = Attribute
-      .fromStructField(indexedDF.schema("idx_outlook")).asInstanceOf[NominalAttribute].values.get
-
-    println("!!!!! Los valores del attributo idx_outlook son:     ")
-
-    attributeValues.foreach(println)
-
-
-    val assembler = new VectorAssembler()
-      .setInputCols(Array("idx_outlook", "idx_temperature",
-        "idx_humidity", "windy"))
-      .setOutputCol("features")
-
-    val assemblerPL = new Pipeline()
-      .setStages(Array(assembler))
-
-    val assemblerDF = assemblerPL.fit(indexedDF).transform(indexedDF)
-
-
-    assemblerDF.show()
-
-
-    val attributeValues2 = AttributeGroup.fromStructField(assemblerDF.schema("features")).attributes
-
-    attributeValues2.get(0).asInstanceOf[NominalAttribute].values.get.foreach(println)
-    println("!!!!! Los valores del attributo idx_outlook son:     ")
-
-    // Index labels, adding metadata to the label column.
-    // Fit on whole dataset to include all labels in index.
-
-    val labelIndexer = new StringIndexer()
-      .setInputCol(df.columns.last)
-      .setOutputCol("label")
 
     // Automatically identify categorical features, and index them.
-
     val featureIndexer = new VectorIndexer()
       .setInputCol("features")
       .setOutputCol("indexedFeatures")
-      .setMaxCategories(5) // features with > 4 distinct values are treated as continuous
+      .setMaxCategories(4) // features with > 4 distinct values are treated as continuous
 
-    val prepareDataPipeline = new Pipeline()
-      .setStages(Array(featureIndexer))
+    val transformers = stringIndexers ::: List(assembler) ::: List(featureIndexer)
 
-    val preTrainDF = prepareDataPipeline.fit(assemblerDF).transform(assemblerDF)
+    val prepareDataPipeline =
+      new Pipeline().setStages(transformers.toArray)
 
-    preTrainDF.show()
+    val indexedDataset = prepareDataPipeline.fit(dataDF).transform(dataDF)
 
-    val dataFrameToTrain = preTrainDF.select("indexedFeatures", "idx_play")
-    dataFrameToTrain.show()
+    val onerR =
+      new OneRClassifier()
+        .setLabelCol("idx_Class")
+        .setFeaturesCol("indexedFeatures")
+        .setPredictionCol("predictedLabel")
 
-    val oneR = new OneRClassifier()
-      .setLabelCol("idx_play")
-      .setFeaturesCol("indexedFeatures")
-      .setPredictionCol("predicedLabel")
+    val (trainingDuration, oneRModel) = time(onerR.fit(indexedDataset))
 
-    oneR.fit(dataFrameToTrain)
+    val (predictionDuration, prediction) = time(oneRModel.transform(indexedDataset))
+
+    val predictionsAndLabels = prediction.select("predictedLabel", "idx_Class")
+
+    val evaluator = new MulticlassClassificationEvaluator()
+      .setLabelCol("idx_Class")
+      .setPredictionCol("predictedLabel")
+      .setMetricName("accuracy")
+
+    val accuracy = evaluator.evaluate(predictionsAndLabels)
+
+    println(s" Training Time ${ trainingDuration } milliseconds\n")
+
+    println(s" Prediction Time ${ predictionDuration } milliseconds\n")
+
+    println(s"The accuracy is : ${ accuracy * 100 } % ")
 
     spark.stop()
+
+  }
+
+  private def time[R](block: => R): (Long, R) = {
+    val t0     = System.nanoTime()
+    val result = block // call-by-name
+    val t1     = System.nanoTime()
+    (NANOSECONDS.toMillis(t1 - t0), result)
   }
 
 }
