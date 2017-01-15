@@ -129,6 +129,8 @@ final class OneRClassifier(override val uid: String)
 
   def setPredictionCol(value: String): this.type = set(predictionCol, value)
 
+  def setX(value: Double): this.type = set(reg, value)
+
   override def fit(dataset: Dataset[_]): OneRClassifierModel = {
 
     val schema = dataset.schema

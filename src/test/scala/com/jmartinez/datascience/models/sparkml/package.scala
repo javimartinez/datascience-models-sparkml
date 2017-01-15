@@ -16,7 +16,5 @@
 
 package com.jmartinez.datascience.models
 
-/**
-  * Created by Javi on 19/10/16.
-  */
+
 package object sparkml {}

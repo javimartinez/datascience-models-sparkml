@@ -16,6 +16,19 @@
 
 package org.apache.spark.ml
 
+import org.apache.spark.ml.param.{ DoubleParam, ParamValidators }
+
 trait ZeroRParams extends PredictorParams
 
-trait OneRParams extends PredictorParams
+trait OneRParams extends PredictorParams {
+
+  /**
+    * Param for regularization parameter (>= 0).
+    * @group param
+    */
+  final val reg: DoubleParam =
+    new DoubleParam(this, "regParam", "regularization parameter (>= 0)", ParamValidators.gtEq(0))
+
+  /** @group getParam */
+  final def getRegParam: Double = $(reg)
+}
