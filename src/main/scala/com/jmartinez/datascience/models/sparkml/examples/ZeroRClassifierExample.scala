@@ -18,12 +18,12 @@ package com.jmartinez.datascience.models.sparkml.examples
 
 import java.util.concurrent.TimeUnit._
 
-import com.jmartinez.datascience.models.sparkml.models.{OneRClassifier, ZeroRClassifier}
-import org.apache.log4j.{Level, Logger}
+import com.jmartinez.datascience.models.sparkml.models.{ OneRClassifier, ZeroRClassifier }
+import org.apache.log4j.{ Level, Logger }
 
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler, VectorIndexer}
+import org.apache.spark.ml.feature.{ StringIndexer, VectorAssembler, VectorIndexer }
 import org.apache.spark.sql.SparkSession
 import com.jmartinez.datascience.models.sparkml.keelReader.KeelReader._
 
@@ -45,14 +45,13 @@ object ZeroRClassifierExample {
 
     // Transformer
 
-    val (stringIndexers,columns) = dataDF.columns.map { column =>
-      val newColumn = s"idx_${column}"
+    val (stringIndexers, columns) = dataDF.columns.map { column =>
+      val newColumn = s"idx_${ column }"
       (new StringIndexer().setInputCol(column).setOutputCol(newColumn), newColumn)
     }.toList.unzip
 
     val assembler =
       new VectorAssembler().setInputCols(columns.dropRight(1).toArray).setOutputCol("features")
-
 
     // Automatically identify categorical features, and index them.
     val featureIndexer = new VectorIndexer()
