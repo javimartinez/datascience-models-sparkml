@@ -60,14 +60,13 @@ object KeelReader {
 
   }
 
-  private def parseKeelAttributeLine(line: String): KeelAttribute = {
+  private def parseKeelAttributeLine(line: String): KeelAttribute =
     keelHeaderParser.parse(line) match {
       case Parsed.Success(keelAttribute, _) =>
         keelAttribute
       case Parsed.Failure(_, _, extraFailure) =>
         throw new Exception(extraFailure.traced.trace)
     }
-  }
 
   private def structFieldFromKeelAttribute(keelAttribute: KeelAttribute): StructField = {
 

@@ -46,7 +46,7 @@ object ZeroRClassifierExample {
     // Transformer
 
     val (stringIndexers, columns) = dataDF.columns.map { column =>
-      val newColumn = s"idx_${ column }"
+      val newColumn = s"idx_${column}"
       (new StringIndexer().setInputCol(column).setOutputCol(newColumn), newColumn)
     }.toList.unzip
 
@@ -85,11 +85,11 @@ object ZeroRClassifierExample {
 
     val accuracy = evaluator.evaluate(predictionsAndLabels)
 
-    println(s" Training Time ${ trainingDuration } milliseconds\n")
+    println(s" Training Time ${trainingDuration} milliseconds\n")
 
-    println(s" Prediction Time ${ predictionDuration } milliseconds\n")
+    println(s" Prediction Time ${predictionDuration} milliseconds\n")
 
-    println(s"The accuracy is : ${ accuracy * 100 } % ")
+    println(s"The accuracy is : ${accuracy * 100} % ")
 
     spark.stop()
 
