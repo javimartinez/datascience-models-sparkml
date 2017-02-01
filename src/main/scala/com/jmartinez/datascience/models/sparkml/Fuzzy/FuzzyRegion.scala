@@ -22,7 +22,7 @@ sealed abstract class FuzzyRegion extends Serializable {
 
 }
 
-class LeftFuzzyRegion(val center: Double, val right: Double) extends FuzzyRegion {
+case class LeftFuzzyRegion(center: Double, right: Double) extends FuzzyRegion {
 
   //TODO: rename x
   override def membershipOf(x: Double): Double = {
@@ -35,14 +35,14 @@ class LeftFuzzyRegion(val center: Double, val right: Double) extends FuzzyRegion
   }
 }
 
-object LeftFuzzyRegion {
+//object LeftFuzzyRegion {
+//
+//  def apply(center: Double, right: Double): LeftFuzzyRegion =
+//    new LeftFuzzyRegion(center, right)
+//
+//}
 
-  def apply(center: Double, right: Double): LeftFuzzyRegion =
-    new LeftFuzzyRegion(center, right)
-
-}
-
-class RightFuzzyRegion(val left: Double, val center: Double) extends FuzzyRegion {
+case class RightFuzzyRegion(left: Double, center: Double) extends FuzzyRegion {
 
   override def membershipOf(x: Double): Double = {
     val degreeOfMembership = x match {
@@ -54,14 +54,13 @@ class RightFuzzyRegion(val left: Double, val center: Double) extends FuzzyRegion
   }
 }
 
-object RightFuzzyRegion {
+//object RightFuzzyRegion {
+//
+//  def apply(left: Double, centre: Double): RightFuzzyRegion =
+//    new RightFuzzyRegion(left, centre)
+//}
 
-  def apply(left: Double, centre: Double): RightFuzzyRegion =
-    new RightFuzzyRegion(left, centre)
-}
-
-class TriangularFuzzyRegion(val left: Double, val center: Double, val right: Double)
-    extends FuzzyRegion {
+case class TriangularFuzzyRegion(left: Double, center: Double, right: Double) extends FuzzyRegion {
 
   override def membershipOf(x: Double): Double = {
     val degreeOfMembership = x match {
@@ -74,9 +73,9 @@ class TriangularFuzzyRegion(val left: Double, val center: Double, val right: Dou
   }
 }
 
-object TriangularFuzzyRegion {
-
-  def apply(left: Double, center: Double, right: Double) =
-    new TriangularFuzzyRegion(left, center, right)
-
-}
+//object TriangularFuzzyRegion {
+//
+//  def apply(left: Double, center: Double, right: Double) =
+//    new TriangularFuzzyRegion(left, center, right)
+//
+//}

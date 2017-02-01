@@ -27,7 +27,7 @@ object FuzzyPartition {
                            numFuzzyRegions: Int): FuzzyPartition = {
 
     val lastFuzzyRegion = numFuzzyRegions // TODO:
-    val amplitude       = (maxValue - minValue) / (numFuzzyRegions - 1)
+    val amplitude       = (maxValue - minValue) / (numFuzzyRegions - 1) // because the last and the end partition has the amplitude/2 ???
 
     @tailrec
     def loop(left: Double,
@@ -36,7 +36,7 @@ object FuzzyPartition {
              numFuzzyRegion: Int,
              regions: Vector[FuzzyRegion]): FuzzyPartition =
       numFuzzyRegion match {
-        case 0 => FuzzyPartition(regions.+:(LeftFuzzyRegion(center, right))) //Ending
+        case 1 => FuzzyPartition(regions.+:(LeftFuzzyRegion(center, right))) //Ending
         case fuzzyRegion if fuzzyRegion == lastFuzzyRegion => // beginning
           loop(left - amplitude,
                center - amplitude,

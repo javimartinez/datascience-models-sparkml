@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
-package com.jmartinez.datascience.models
+package com.jmartinez.datascience.models.sparkml.Fuzzy
 
-package object sparkml {}
+
+
+class FuzzyRegionSpec {
+
+}
