@@ -19,7 +19,6 @@ object Build extends AutoPlugin {
   override def trigger = allRequirements
 
   override def projectSettings =
-    reformatOnCompileSettings ++
     Vector(
            // Core settings
            organization := "com.jmartinez", 
