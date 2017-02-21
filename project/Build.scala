@@ -38,7 +38,7 @@ object Build extends AutoPlugin {
 
            // scalafmt settings
            formatSbtFiles := false,
-           scalafmtConfig := Some(baseDirectory.in(ThisBuild).value / ".scalafmt"),
+           scalafmtConfig := Some(baseDirectory.in(ThisBuild).value / ".scalafmt.conf"),
 
            // Git settings
            git.useGitDescribe := true,

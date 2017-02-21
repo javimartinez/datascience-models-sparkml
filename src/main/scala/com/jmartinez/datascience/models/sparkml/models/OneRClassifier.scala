@@ -38,16 +38,17 @@ import org.apache.spark.ml.attribute._
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util._
-import org.apache.spark.ml.{ Estimator, Model, OneRParams }
+import org.apache.spark.ml.{Estimator, Model, OneRParams}
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.types.{ DoubleType, StructField, StructType }
-import org.apache.spark.sql.{ DataFrame, _ }
+import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
+import org.apache.spark.sql.{DataFrame, _}
 
-case class OneRule(attribute: Attribute,
-                   labelAttribute: Attribute,
-                   predictedLabelAttribute: Map[Double, Double],
-                   totalScore: Double)
-    extends Serializable {
+case class OneRule(
+    attribute: Attribute,
+    labelAttribute: Attribute,
+    predictedLabelAttribute: Map[Double, Double],
+    totalScore: Double
+) extends Serializable {
 
   override def toString: String = {
 
@@ -69,15 +70,17 @@ case class OneRule(attribute: Attribute,
         throw new Exception("The attribute type is not correct ")
     }
 
-    predictedLabelAttribute.map {
-      case (aValueIndex: Double, lValueIndex: Double) =>
-        val attributeValue = attributeValues(aValueIndex.toInt)
-        val labelValue     = attributeLabelValues(lValueIndex.toInt)
+    predictedLabelAttribute
+      .map {
+        case (aValueIndex: Double, lValueIndex: Double) =>
+          val attributeValue = attributeValues(aValueIndex.toInt)
+          val labelValue = attributeLabelValues(lValueIndex.toInt)
 
-        s"If ${ attribute.name.getOrElse("x") } = $attributeValue THEN ${ labelAttribute.name
-          .getOrElse("x") } = $labelValue \n"
+          s"If ${attribute.name.getOrElse("x")} = $attributeValue THEN ${labelAttribute.name
+            .getOrElse("x")} = $labelValue \n"
 
-    }.foldLeft("")(_ + _)
+      }
+      .foldLeft("")(_ + _)
 
   }
 
@@ -87,12 +90,16 @@ final class OneRClassifierModel(override val uid: String, val rule: OneRule)
     extends Model[OneRClassifierModel]
     with OneRParams {
 
-  override def copy(extra: ParamMap): OneRClassifierModel = defaultCopy(extra)
+  override def copy(extra: ParamMap): OneRClassifierModel = {
+    val copied = new OneRClassifierModel(uid,rule)
+    copyValues(copied,extra).setParent(parent)
+  }
 
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = {
     // TODO: check feature column
-    require(!schema.fieldNames.contains(predictionCol), s"Prediction column already exists")
+    require(!schema.fieldNames.contains(predictionCol),
+            s"Prediction column already exists")
     StructType(schema.fields :+ StructField("prediction", DoubleType, false))
   }
 
@@ -107,7 +114,13 @@ final class OneRClassifierModel(override val uid: String, val rule: OneRule)
       rule.predictedLabelAttribute(attributeValueToClassify)
     }
 
-    dataset.withColumn($ { predictionCol }, classifyInstance(dataset($ { featuresCol })))
+    dataset.withColumn($ { predictionCol }, classifyInstance(dataset($ {
+      featuresCol
+    })))
+  }
+
+  override def toString(): String = {
+    s"One Simple Rules Model is: \n ${rule.toString()}"
   }
 
 }
@@ -141,13 +154,14 @@ final class OneRClassifier(override val uid: String)
     val dfToTrain: DataFrame = dataset.select($(featuresCol), $(labelCol))
 
     val attributes =
-      attributesOption.getOrElse(default = throw new Exception("The attributes are missing"))
+      attributesOption.getOrElse(
+        default = throw new Exception("The attributes are missing"))
 
     val labelAttribte = Attribute.fromStructField(schema($(labelCol)))
 
     val numClasses = labelAttribte match {
-      case binAttr: BinaryAttribute                  => Some(2)
-      case nomAttr: NominalAttribute                 => nomAttr.getNumValues
+      case binAttr: BinaryAttribute => Some(2)
+      case nomAttr: NominalAttribute => nomAttr.getNumValues
       case _: NumericAttribute | UnresolvedAttribute => None
     }
 
@@ -157,7 +171,7 @@ final class OneRClassifier(override val uid: String)
       val partialDF = dataToTrainRDD.map {
         case Row(features: Vector, label: Double) =>
           val attributeValue = features.toArray(attribute.index.get)
-          val counter        = Array.fill[Int](numClasses.get) { 0 }
+          val counter = Array.fill[Int](numClasses.get) { 0 }
           counter(label.toInt) += 1
 
           (attributeValue, counter) // The label is not necessary
@@ -172,7 +186,7 @@ final class OneRClassifier(override val uid: String)
 
       val finalResult = result.map {
         case (attributeValue: Double, counter: Array[Int]) =>
-          val score           = counter.max
+          val score = counter.max
           val indexOfMaxLabel = counter.indexOf(score)
           (attributeValue, indexOfMaxLabel.toDouble, score)
       }
@@ -199,7 +213,8 @@ final class OneRClassifier(override val uid: String)
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = {
     // TODO: check feature column
-    require(!schema.fieldNames.contains(predictionCol), s"Prediction column already exists")
+    require(!schema.fieldNames.contains(predictionCol),
+            s"Prediction column already exists")
     StructType(schema.fields :+ StructField("prediction", DoubleType, false))
   }
 }
