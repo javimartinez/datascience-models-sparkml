@@ -25,6 +25,8 @@ master:
     - ./conf/master/:/conf
     - ./data/:/data
     - ./:/workspace
+  volumes_from:
+    - logfiles
 
 worker:
   image: spark-test
@@ -50,6 +52,8 @@ worker:
     - ./conf/worker/:/conf
     - ./data/:/data
     - ./:/workspace
+  volumes_from:
+    - logfiles
 
 worker2:
   image: spark-test
@@ -75,3 +79,25 @@ worker2:
     - ./conf/worker/:/conf
     - ./data/:/data
     - ./:/workspace
+  volumes_from:
+    - logfiles
+
+history:
+  image: spark-test
+  command: bin/spark-class org.apache.spark.deploy.history.HistoryServer
+  hostname: history
+  environment:
+    SPARK_CONF_DIR: /conf
+  expose:
+    - 18080
+  ports:
+    - 18080:18080
+  volumes:
+    - ./conf/history:/conf
+  volumes_from:
+    - logfiles
+
+logfiles:
+  image: ubuntu:14.04
+  volumes:
+    - /tmp/spark-events
