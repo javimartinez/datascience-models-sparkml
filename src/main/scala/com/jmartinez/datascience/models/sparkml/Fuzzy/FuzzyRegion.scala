@@ -35,13 +35,6 @@ case class LeftFuzzyRegion(center: Double, right: Double) extends FuzzyRegion {
   }
 }
 
-//object LeftFuzzyRegion {
-//
-//  def apply(center: Double, right: Double): LeftFuzzyRegion =
-//    new LeftFuzzyRegion(center, right)
-//
-//}
-
 case class RightFuzzyRegion(left: Double, center: Double) extends FuzzyRegion {
 
   override def membershipOf(x: Double): Double = {
@@ -53,12 +46,6 @@ case class RightFuzzyRegion(left: Double, center: Double) extends FuzzyRegion {
     degreeOfMembership
   }
 }
-
-//object RightFuzzyRegion {
-//
-//  def apply(left: Double, centre: Double): RightFuzzyRegion =
-//    new RightFuzzyRegion(left, centre)
-//}
 
 case class TriangularFuzzyRegion(left: Double, center: Double, right: Double) extends FuzzyRegion {
 
@@ -73,9 +60,8 @@ case class TriangularFuzzyRegion(left: Double, center: Double, right: Double) ex
   }
 }
 
-//object TriangularFuzzyRegion {
-//
-//  def apply(left: Double, center: Double, right: Double) =
-//    new TriangularFuzzyRegion(left, center, right)
-//
-//}
+case class FuzzyRegionSingleton(center: Double) extends FuzzyRegion {
+  override def membershipOf(x: Double): Double =
+    if (x == center) 1
+    else 0
+}

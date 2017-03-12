@@ -18,16 +18,23 @@ package com.jmartinez.datascience.models.sparkml.Fuzzy
 
 import scala.annotation.tailrec
 
-case class FuzzyPartition(regions: Vector[FuzzyRegion])
+case class FuzzyPartition(regions: Vector[FuzzyRegion]) {
+
+  def findFuzzyRegionWithMaxDegreeFor(item: Double): Int = // index of fuzzy region
+    regions.zipWithIndex.map {
+      case (fuzzyRegion: FuzzyRegion, index: Int) => (fuzzyRegion.membershipOf(item), index)
+    }.maxBy(_._1)._2 // max of Degree
+}
 
 object FuzzyPartition {
 
-  def createFuzzyPartition(minValue: Double,
-                           maxValue: Double,
-                           numFuzzyRegions: Int): FuzzyPartition = {
+  def apply(minValue: Double, //
+            maxValue: Double,
+            numFuzzyRegions: Int): FuzzyPartition = {
 
-    val lastFuzzyRegion = numFuzzyRegions // TODO:
-    val amplitude       = (maxValue - minValue) / (numFuzzyRegions - 1) // because the last and the end partition has the amplitude/2 ???
+    val lastFuzzyRegion = numFuzzyRegions
+    // TODO:
+    val amplitude = (maxValue - minValue) / (numFuzzyRegions - 1) // because the last and the end partition has the amplitude/2 ???
 
     @tailrec
     def loop(left: Double,
@@ -36,7 +43,7 @@ object FuzzyPartition {
              numFuzzyRegion: Int,
              regions: Vector[FuzzyRegion]): FuzzyPartition =
       numFuzzyRegion match {
-        case 1 => FuzzyPartition(regions.+:(LeftFuzzyRegion(center, right))) //Ending
+        case 1 => new FuzzyPartition(regions.+:(LeftFuzzyRegion(center, right))) //Ending
         case fuzzyRegion if fuzzyRegion == lastFuzzyRegion => // beginning
           loop(left - amplitude,
                center - amplitude,
@@ -55,4 +62,13 @@ object FuzzyPartition {
          Vector[FuzzyRegion]())
 
   }
+
+  def apply(n: Int): FuzzyPartition = {
+    val fuzzyRegions = Range(0, n).map { element: Int =>
+      FuzzyRegionSingleton(element)
+    }.toVector
+
+    FuzzyPartition(fuzzyRegions)
+  }
+
 }

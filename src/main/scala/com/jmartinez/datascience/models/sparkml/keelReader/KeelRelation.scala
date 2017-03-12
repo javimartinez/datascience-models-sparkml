@@ -24,25 +24,25 @@ import org.apache.commons.csv._
 
 import org.apache.spark.rdd._
 import org.apache.spark.sql._
-import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation, PrunedScan, TableScan}
+import org.apache.spark.sql.sources.{ BaseRelation, InsertableRelation, PrunedScan, TableScan }
 import org.apache.spark.sql.types._
 
 case class KeelRelation(
-                         baseRDD: () => RDD[String],
-                         location: Option[String],
-                         useHeader: Boolean = false,
-                         delimiter: Char = ',',
-                         quote: Character = '"',
-                         escape: Character = null,
-                         comment: Character = null,
-                         treatEmptyValuesAsNulls: Boolean,
-                         userSchema: StructType,
-                         codec: String = null,
-                         nullValue: String = "",
-                         dateFormat: String = null,
-                         maxCharsPerCol: Int = 100000
-                       )(@transient val sqlContext: SQLContext)
-  extends BaseRelation
+    baseRDD: () => RDD[String],
+    location: Option[String],
+    useHeader: Boolean = false,
+    delimiter: Char = ',',
+    quote: Character = '"',
+    escape: Character = null,
+    comment: Character = null,
+    treatEmptyValuesAsNulls: Boolean,
+    userSchema: StructType,
+    codec: String = null,
+    nullValue: String = "",
+    dateFormat: String = null,
+    maxCharsPerCol: Int = 100000
+)(@transient val sqlContext: SQLContext)
+    extends BaseRelation
     with TableScan
     with PrunedScan
     with InsertableRelation {
@@ -81,8 +81,8 @@ case class KeelRelation(
 
   override def buildScan: RDD[Row] = {
     val simpleDateFormatter = dateFormatter
-    val schemaFields = schema.fields
-    val rowArray = new Array[Any](schemaFields.length)
+    val schemaFields        = schema.fields
+    val rowArray            = new Array[Any](schemaFields.length)
     tokenRdd(schemaFields.map(_.name)).flatMap { tokens =>
       var index: Int = 0
       try {
@@ -90,11 +90,11 @@ case class KeelRelation(
         while (index < schemaFields.length) {
           val field = schemaFields(index)
           rowArray(index) = TypeCast.castTo(tokens(index),
-            field.dataType,
-            field.nullable,
-            treatEmptyValuesAsNulls,
-            nullValue,
-            simpleDateFormatter)
+                                            field.dataType,
+                                            field.nullable,
+                                            treatEmptyValuesAsNulls,
+                                            nullValue,
+                                            simpleDateFormatter)
           index = index + 1
         }
         Some(Row.fromSeq(rowArray))
@@ -114,10 +114,10 @@ case class KeelRelation(
     */
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {
     val simpleDateFormatter = dateFormatter
-    val schemaFields = schema.fields
-    val requiredFields = StructType(requiredColumns.map(schema(_))).fields
-    val shouldTableScan = schemaFields.deep == requiredFields.deep
-    val safeRequiredFields = requiredFields
+    val schemaFields        = schema.fields
+    val requiredFields      = StructType(requiredColumns.map(schema(_))).fields
+    val shouldTableScan     = schemaFields.deep == requiredFields.deep
+    val safeRequiredFields  = requiredFields
 
     val rowArray = new Array[Any](safeRequiredFields.length)
     if (shouldTableScan) {
@@ -139,17 +139,17 @@ case class KeelRelation(
           tokens
         }
         try {
-          var index: Int = 0
+          var index: Int    = 0
           var subIndex: Int = 0
           while (subIndex < safeRequiredIndices.length) {
             index = safeRequiredIndices(subIndex)
             val field = schemaFields(index)
             rowArray(subIndex) = TypeCast.castTo(indexSafeTokens(index),
-              field.dataType,
-              field.nullable,
-              treatEmptyValuesAsNulls,
-              nullValue,
-              simpleDateFormatter)
+                                                 field.dataType,
+                                                 field.nullable,
+                                                 treatEmptyValuesAsNulls,
+                                                 nullValue,
+                                                 simpleDateFormatter)
             subIndex = subIndex + 1
           }
           Some(Row.fromSeq(rowArray.take(requiredSize)))

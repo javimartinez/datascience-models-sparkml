@@ -21,9 +21,8 @@ import fastparse.noApi._
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{ DataFrame, SparkSession }
 import AttributeConverters._
-
 
 object KeelReader {
 
@@ -39,9 +38,9 @@ object KeelReader {
       val schema = readHeader(headerLines)
 
       val csvRelation = KeelRelation(() => csvLines,
-        location = Some(filePath),
-        userSchema = schema,
-        treatEmptyValuesAsNulls = false)(spark.sqlContext)
+                                     location = Some(filePath),
+                                     userSchema = schema,
+                                     treatEmptyValuesAsNulls = false)(spark.sqlContext)
 
       spark.sqlContext.baseRelationToDataFrame(csvRelation)
 
@@ -68,15 +67,13 @@ object KeelReader {
         throw new Exception(extraFailure.traced.trace)
     }
 
-  private def structFieldFromKeelAttribute(keelAttribute: KeelAttribute): StructField = {
-
+  private def structFieldFromKeelAttribute(keelAttribute: KeelAttribute): StructField =
     keelAttribute match { // TODO: nullable harcoded
       case att: NumericAttribute =>
         StructField(att.name, DoubleType, false, att.toMetadata())
       case att: CategoricalAttribute =>
         StructField(att.name, StringType, false, Metadata.empty)
     }
-  }
 
   private def divideKeelRDD(inputRDD: RDD[String]): (List[String], RDD[String]) = {
     //TODO: workaround: parse header lines in CsvRelation (KeelRelation)
