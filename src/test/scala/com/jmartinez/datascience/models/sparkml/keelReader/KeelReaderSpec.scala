@@ -16,7 +16,6 @@
 
 package com.jmartinez.datascience.models.sparkml.keelReader
 
-import com.jmartinez.datascience.models.sparkml.keelReader.HeaderParser.KeelAttribute
 import org.scalatest._
 
 import org.apache.spark.sql.types._
@@ -29,9 +28,10 @@ class KeelReaderSpec extends FlatSpec with Matchers with PrivateMethodTester {
 
     val attributeLine = "@attribute Y-box integer [0, 15]"
 
-    KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe KeelAttribute(
+    KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe NumericAttribute(
       "Y-box",
-      "integer"
+      0,
+      15
     )
 
   }
@@ -40,9 +40,10 @@ class KeelReaderSpec extends FlatSpec with Matchers with PrivateMethodTester {
 
     val attributeLine = "@attribute S2 integer[1,4]"
 
-    KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe KeelAttribute(
+    KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe NumericAttribute(
       "S2",
-      "integer"
+      1,
+      4
     )
 
   }
@@ -52,7 +53,19 @@ class KeelReaderSpec extends FlatSpec with Matchers with PrivateMethodTester {
     val attributeLine = "@attribute AGE real [0.0,99.0]"
 
     KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe
-      KeelAttribute("AGE", "real")
+      NumericAttribute("AGE", 0.0, 99.0)
+
+  }
+
+  it should "parse negative integer keel attribute" in {
+
+    val attributeLine = "@attribute S2 integer[-1,-4]"
+
+    KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe NumericAttribute(
+      "S2",
+      -1,
+      -4
+    )
 
   }
 
@@ -61,7 +74,7 @@ class KeelReaderSpec extends FlatSpec with Matchers with PrivateMethodTester {
     val attributeLine = "@attribute A11 {x,o,b}"
 
     KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe
-      KeelAttribute("A11", "")
+      CategoricalAttribute("A11")
   }
 
 }
