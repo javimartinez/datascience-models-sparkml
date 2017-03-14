@@ -16,29 +16,37 @@
 
 package com.jmartinez.datascience.models.sparkml.keelReader
 
-import fastparse.WhitespaceApi
-import fastparse.noApi._
+import fastparse.all._
 
-object HeaderParser {
+sealed abstract class KeelAttribute(name: String)
 
-  case class KeelAttribute(name: String, attributeType: String)
+// divide into Integer/RealAttribute
+case class NumericAttribute(name: String, minValue: Double, maxValue: Double) extends KeelAttribute(name)
 
-  val White = WhitespaceApi.Wrapper {
-    import fastparse.all._
-    NoTrace(" ".rep)
-  }
+case class CategoricalAttribute(name: String) extends KeelAttribute(name)
 
-  import White._
+object HeaderParser extends BasicsParser {
 
-  val whiteSpaces = P(" ".rep)
 
   val attributeName = P(CharsWhile(x => x != ' ').!)
 
-  val attributeType: Parser[String] = P("integer".! | "real".! | "".!)
+  val attributeType: Parser[String] = P("integer".! | "real".!)
 
-  val attributeParser: Parser[KeelAttribute] =
-    P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ attributeType)
-      .map(KeelAttribute.tupled)
+  val categoricalAttribute: Parser[KeelAttribute] =
+    P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ bracedBlock(alphaNumeric) ~ End)
+      .map {
+        case (atname, _) => // TODO: Esto no se puede quedar así, necesita refactor urgente. Solo para avanzar en el algoritmo
+          CategoricalAttribute(atname)
+      }
+
+  val numericAttribute: Parser[KeelAttribute] = P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ attributeType ~ whiteSpaces ~ squareBrackedBlock(double) ~ End) // TODO: workaround
+    .map {
+    case (atname, atType, vector) =>
+      atType match {
+        case "integer" => NumericAttribute(atname, vector(0), vector(1))
+        case "real" => NumericAttribute(atname, vector(0), vector(1))
+      }
+  }
 
   val relationParser = P("@relation" ~ AnyChar.!)
 
@@ -46,6 +54,6 @@ object HeaderParser {
 
   val outputParser = P("@outputs" ~ whiteSpaces ~ CharIn('a' to 'z').!)
 
-  val keelHeaderParser: Parser[KeelAttribute] = P(attributeParser)
+  val keelHeaderParser: Parser[KeelAttribute] = P(categoricalAttribute | numericAttribute)
 
 }

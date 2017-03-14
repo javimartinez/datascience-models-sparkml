@@ -16,16 +16,20 @@
 
 package com.jmartinez.datascience.models.sparkml.keelReader
 
-import com.holdenkarau.spark.testing.SharedSparkContext
-import org.scalatest.FunSuite
 
-class KeelReaderSparkSuite extends FunSuite with SharedSparkContext { // TODO: jmartinez esto hace ver que hay que separar la funcionalidad de esta clase
+trait Helpers {
 
-//  test("test initializing spark context") {
-//    val list = List(1, 2, 3, 4)
-//    val rdd  = sc.parallelize(list)
-//
-//    assert(rdd.count === 4)
-//  }
+  // Wraps a function with a name
+  protected[this] case class NamedFunction[T, V](f: T => V, name: String) extends (T => V) {
+    def apply(t: T): V = f(t)
+
+    override def toString(): String = name
+  }
+
+  // A function for valid digits
+  val Digits = NamedFunction('0' to '9' contains (_: Char), "Digits")
+
+  // A function for valid whitespaces
+  val Whitespace = NamedFunction(" \r\n".contains(_: Char), "Whitespace")
 
 }

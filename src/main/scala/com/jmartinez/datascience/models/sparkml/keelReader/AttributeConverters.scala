@@ -16,16 +16,15 @@
 
 package com.jmartinez.datascience.models.sparkml.keelReader
 
-import com.holdenkarau.spark.testing.SharedSparkContext
-import org.scalatest.FunSuite
 
-class KeelReaderSparkSuite extends FunSuite with SharedSparkContext { // TODO: jmartinez esto hace ver que hay que separar la funcionalidad de esta clase
+import org.apache.spark.ml.attribute.{NumericAttribute => MLNumericAttribute}
 
-//  test("test initializing spark context") {
-//    val list = List(1, 2, 3, 4)
-//    val rdd  = sc.parallelize(list)
-//
-//    assert(rdd.count === 4)
-//  }
+object AttributeConverters {
 
+  implicit def keelNumericAttributeToMLNumericAttribute(numericAttribute: NumericAttribute): MLNumericAttribute = {
+    MLNumericAttribute.defaultAttr
+      .withName(numericAttribute.name)
+      .withMax(numericAttribute.maxValue)
+      .withMin(numericAttribute.minValue)
+  }
 }
