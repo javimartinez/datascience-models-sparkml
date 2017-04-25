@@ -72,13 +72,16 @@ object WangMendelUtils {
 
     val attributesIndex = attributes.flatMap(_.index) // no me asegura que esten todos los atributos BroadCast??
 
-    dataset.flatMap {
-      case (Row(features: Vector, _)) => //vectorUDT
-        attributesIndex.map(idx => (idx, (features(idx), features(idx))))
-    }.reduceByKey {
-      case ((elemToMax1, elemToMin1), (elemToMax2, elemToMin2)) =>
-        (scala.math.max(elemToMax1, elemToMax2), scala.math.min(elemToMin1, elemToMin2))
-    }.collect
+    dataset
+      .flatMap {
+        case (Row(features: Vector, _)) => //vectorUDT
+          attributesIndex.map(idx => (idx, (features(idx), features(idx))))
+      }
+      .reduceByKey {
+        case ((elemToMax1, elemToMin1), (elemToMax2, elemToMin2)) =>
+          (scala.math.max(elemToMax1, elemToMax2), scala.math.min(elemToMin1, elemToMin2))
+      }
+      .collect
   }
 }
 
@@ -96,24 +99,24 @@ final class WangMendelModel(
     StructType(schema.fields :+ StructField("prediction", DoubleType, false))
   }
 
-  override def copy(extra: ParamMap): WangMendelModel = ???
-
+  override def copy(extra: ParamMap): WangMendelModel = {
+    val copied = new WangMendelModel(uid, ruleBase, fuzzyPartitionsFeatures, fuzzyPartitionsLabel)
+    copyValues(copied, extra).setParent(parent)
+  }
   override protected def predict(features: DenseVector): Double = {
-    // hacer un mapa vs ..*[]:
 
-    val a = collection.mutable.Map.empty[Int, Double]
-
-    ruleBase.foreach { rule =>
-      a += ((rule.consequent,
-             WangMendelUtils.evaluateMembershipAntecedents(
-               features.toArray,
-               rule.antecedents,
-               fuzzyPartitionsFeatures
-             )))
+    val (consequentIndex, _) = {
+      val consequentsDegreeMap = collection.mutable.Map.empty[Int, Double]
+      ruleBase.foreach { rule =>
+        consequentsDegreeMap += ((rule.consequent,
+                                  WangMendelUtils.evaluateMembershipAntecedents(
+                                    features.toArray,
+                                    rule.antecedents,
+                                    fuzzyPartitionsFeatures
+                                  )))
+      }
+      consequentsDegreeMap.maxBy(_._2) // max of accumulator degree
     }
-
-    val (consequentIndex, _) = a.maxBy(_._2)
-
     fuzzyPartitionsLabel.regions(consequentIndex) match {
       case fr: FuzzyRegionSingleton => fr.center
       case _                        => 0
@@ -137,7 +140,7 @@ final class WangMendelAlgorithm(override val uid: String)
     StructType(schema.fields :+ StructField("prediction", DoubleType, false))
   }
 
-  override def copy(extra: ParamMap): WangMendelAlgorithm = ???
+  override def copy(extra: ParamMap): WangMendelAlgorithm = defaultCopy(extra)
 
   override protected def train(dataset: Dataset[_]): WangMendelModel = {
 
@@ -176,10 +179,12 @@ final class WangMendelAlgorithm(override val uid: String)
     // Step 3: Assign degree for each rule
     // Step 4: Create a Combined Fuzzy Rule Base
 
-    val ruleBase = datasetRdd.map {
-      case (features: Array[Double], label: Double) =>
-        generateFuzzyRule(features, label, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
-    }.map(fuzzyRule => (fuzzyRule.getLabelsOfAntecedentsCodified, fuzzyRule))
+    val ruleBase = datasetRdd
+      .map {
+        case (features: Array[Double], label: Double) =>
+          generateFuzzyRule(features, label, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
+      }
+      .map(fuzzyRule => (fuzzyRule.getLabelsOfAntecedentsCodified, fuzzyRule))
       .reduceByKey {
         // in conflict rules choose the rule with maximum degree
         case (fuzzyRule1: FuzzyRule, fuzzyRule2: FuzzyRule) =>
@@ -214,7 +219,8 @@ final class WangMendelAlgorithm(override val uid: String)
           indexsOfFuzzyRegionsOfFeatures,
           fuzzyPartitionsOfFeatures
         ),
-        fuzzyPartitionsOfLabel.regions(indexOfFuzzyRegionOfLabel).membershipOf(label))
+        fuzzyPartitionsOfLabel.regions(indexOfFuzzyRegionOfLabel).membershipOf(label)
+      )
 
     FuzzyRule(indexsOfFuzzyRegionsOfFeatures, indexOfFuzzyRegionOfLabel, degreeOfRule)
   }
