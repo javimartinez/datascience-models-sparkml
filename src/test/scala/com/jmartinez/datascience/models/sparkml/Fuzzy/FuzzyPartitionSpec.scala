@@ -44,7 +44,7 @@ class FuzzyPartitionSpec extends FlatSpec with Matchers {
                TriangularFuzzyRegion(758.5, 1129.25, 1500.0),
                RightFuzzyRegion(1129.25, 1500.0)))
 
-    FuzzyPartition.createFuzzyPartition(minimo, maximo, numFuzzyPartition) shouldBe expectedFuzzyPartition
+    FuzzyPartition(minimo, maximo, numFuzzyPartition) shouldBe expectedFuzzyPartition
   }
 
 }

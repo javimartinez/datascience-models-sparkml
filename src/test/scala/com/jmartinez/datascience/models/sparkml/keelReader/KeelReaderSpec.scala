@@ -77,4 +77,20 @@ class KeelReaderSpec extends FlatSpec with Matchers with PrivateMethodTester {
       CategoricalAttribute("A11")
   }
 
+  it should "parse a real attribute from magic dataset" in {
+
+    val attributeLine = "@attribute FConc1 real [0.0030, 0.6752]"
+
+    import KeelReader._
+
+    parseKeelAttributeLine(attributeLine) shouldBe
+    NumericAttribute("FConc1",0.0030,0.6752)
+  }
+
+  it should "parse an attribute " in {
+
+    val attributeLine = "@attribute Class {0,1,2,3,4,5,6,7,8,9}"
+    KeelReader invokePrivate parseHeaderAttributeLine(attributeLine) shouldBe
+    CategoricalAttribute("Class")
+  }
 }

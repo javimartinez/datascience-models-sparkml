@@ -18,13 +18,14 @@ package com.jmartinez.datascience.models.sparkml.examples
 
 import com.jmartinez.datascience.models.sparkml.keelReader.KeelReader._
 import com.jmartinez.datascience.models.sparkml.models.WangMendelAlgorithm
-import org.apache.log4j.{Level, Logger}
+import org.apache.log4j.{ Level, Logger }
+
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
+import org.apache.spark.ml.feature.{ StringIndexer, VectorAssembler }
+import org.apache.spark.ml.tuning.{ CrossValidator, CrossValidatorModel, ParamGridBuilder }
 import org.apache.spark.mllib.evaluation.RegressionMetrics
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{ DataFrame, SparkSession }
 
 object WangMendelAlgorithmExample {
 
@@ -40,28 +41,34 @@ object WangMendelAlgorithmExample {
     //    val data = spark.keelFile(args(0))
 
     val data =
-      spark.keelFile("./data/machineCPU.dat")
+      spark.keelFile("/Users/Javi/development/data/poker.dat")
 
     val assembler =
       new VectorAssembler().setInputCols(data.columns.dropRight(1)).setOutputCol("features")
 
+    val stringIndexer = new StringIndexer().setInputCol("Class").setOutputCol("idx_Class")
+
     val tranformedData: DataFrame =
-      new Pipeline().setStages(Array(assembler)).fit(data).transform(data)
+      new Pipeline().setStages(Array(assembler, stringIndexer)).fit(data).transform(data)
+
+    tranformedData.show()
 
     val evaluator = new MulticlassClassificationEvaluator()
-      .setLabelCol("PRP")
+      .setLabelCol("idx_Class")
       .setPredictionCol("prediction")
       .setMetricName("accuracy")
 
     val wangMendelAlgorithm =
       new WangMendelAlgorithm()
-        .setLabelCol("PRP")
+        .setLabelCol("idx_Class")
         .setPredictionCol("prediction")
         .setNumFuzzyRegions(5)
 
     val paramGrid = new ParamGridBuilder()
-      .addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(1, 2,5,6,19))
+      .addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(1, 2, 5, 6, 19))
       .build()
+
+//    val indexToString = new IndexToString()
 
     val cv: CrossValidator = new CrossValidator()
       .setEstimator(new Pipeline().setStages(Array(wangMendelAlgorithm)))
@@ -69,15 +76,14 @@ object WangMendelAlgorithmExample {
       .setEstimatorParamMaps(paramGrid)
       .setNumFolds(5)
 
-
     val betterModel: CrossValidatorModel = cv.fit(tranformedData)
-    val result                     = betterModel.transform(tranformedData)
+    val result                           = betterModel.transform(tranformedData)
 
     val accuracy = evaluator.evaluate(result)
     println(s"The accuracy is: ${accuracy * 100}")
     println(s"The simple error is: ${(1 - accuracy) * 100} ")
 
-    evaluateRegressionModel(result, "PRP", "prediction")
+    evaluateRegressionModel(result, "idx_Class", "prediction")
 
     println("Spark job finished")
   }
@@ -92,8 +98,6 @@ object WangMendelAlgorithmExample {
     val RMSE        = new RegressionMetrics(predictions.zip(labels)).meanSquaredError
     println(s"  Root mean squared error (RMSE): $RMSE")
   }
-
-
   //    val predictedData = new Pipeline()
   //      .setStages(Array(wangMendelAlgorithm))
   //      .fit(tranformedData)

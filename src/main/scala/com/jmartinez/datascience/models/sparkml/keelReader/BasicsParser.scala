@@ -35,13 +35,13 @@ trait BasicsParser extends Helpers {
   val digits = P(CharsWhile(Digits))
 
   // A parser for integral numbers
-  val integral = P("0" | CharIn('1' to '9') ~ digits.?)
+  val integral = P("0" | CharIn('0' to '9') ~ digits.?)
 
   // A parser for real numbers
   val double = // white space in the beging for situations like [0, 15]
   P(" ".? ~ "-".? ~ integral ~ ".".? ~ integral.rep(min = 1, max = 16).?).!.map(_.toDouble) //TODO: tener en cuenta negativos
 
-  val alphaNumeric = P(CharIn('1' to '9') | CharIn('a' to 'z') | CharIn('A' to 'Z')).rep.!
+  val alphaNumeric = P(CharIn('0' to '9') | CharIn('a' to 'z') | CharIn('A' to 'Z')).rep.!
 
   val openSquareBracket = P("[")
 

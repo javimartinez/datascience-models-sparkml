@@ -59,7 +59,7 @@ object KeelReader {
 
   }
 
-  private def parseKeelAttributeLine(line: String): KeelAttribute =
+  def parseKeelAttributeLine(line: String): KeelAttribute =
     keelHeaderParser.parse(line) match {
       case Parsed.Success(keelAttribute, _) =>
         keelAttribute
