@@ -16,9 +16,15 @@
 
 package org.apache.spark.ml
 
-import org.apache.spark.ml.param.{ DoubleParam, ParamValidators }
+import org.apache.spark.ml.param.{ DoubleParam, IntParam, ParamValidators }
 
 trait ZeroRParams extends PredictorParams
+
+trait WangMendelParams extends PredictorParams {
+
+  final val numFuzzyRegions: IntParam =
+    new IntParam(this, "numFuzzyRegions", "> 0 ", ParamValidators.gt(0))
+}
 
 trait OneRParams extends PredictorParams {
 

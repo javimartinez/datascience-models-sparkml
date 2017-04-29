@@ -16,7 +16,6 @@
 
 package com.jmartinez.datascience.models.sparkml.keelReader
 
-
 trait Helpers {
 
   // Wraps a function with a name

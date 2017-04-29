@@ -51,10 +51,8 @@ final class ZeroRClassifierModel(override val uid: String, val predictedLabel: D
   override def copy(extra: ParamMap): ZeroRClassifierModel = defaultCopy(extra)
 
   @DeveloperApi
-  override def transformSchema(schema: StructType): StructType = {
+  override def transformSchema(schema: StructType): StructType =
     validateAndTransformSchema(schema, fitting = true, new VectorUDT)
-
-  }
 
   /**
     * Transforms the input dataset.
@@ -122,8 +120,7 @@ final class ZeroRClassifier(override val uid: String)
     defaultCopy(extra)
 
   @DeveloperApi
-  override def transformSchema(schema: StructType): StructType = {
+  override def transformSchema(schema: StructType): StructType =
     validateAndTransformSchema(schema, fitting = true, new VectorUDT)
-  }
 
 }

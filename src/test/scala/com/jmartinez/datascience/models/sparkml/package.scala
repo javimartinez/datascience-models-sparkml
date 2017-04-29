@@ -16,5 +16,4 @@
 
 package com.jmartinez.datascience.models
 
-
 package object sparkml {}

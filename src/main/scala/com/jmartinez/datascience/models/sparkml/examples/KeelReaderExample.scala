@@ -37,9 +37,9 @@ object KeelReaderExample {
     val dataframe =
       spark.keelFile("/Users/Javi/Development/datascience-models-sparkml/data/poker.dat")
 
-    println(s"The size of DataFrame is: ${ dataframe.count }")
+    println(s"The size of DataFrame is: ${dataframe.count}")
 
-    println(s"The schema is: ${ dataframe.schema.toString }")
+    println(s"The schema is: ${dataframe.schema.toString}")
 
     dataframe.show(20)
 

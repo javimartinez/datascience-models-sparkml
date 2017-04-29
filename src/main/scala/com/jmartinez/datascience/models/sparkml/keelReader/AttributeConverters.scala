@@ -16,15 +16,14 @@
 
 package com.jmartinez.datascience.models.sparkml.keelReader
 
-
-import org.apache.spark.ml.attribute.{NumericAttribute => MLNumericAttribute}
+import org.apache.spark.ml.attribute.{ NumericAttribute => MLNumericAttribute }
 
 object AttributeConverters {
 
-  implicit def keelNumericAttributeToMLNumericAttribute(numericAttribute: NumericAttribute): MLNumericAttribute = {
+  implicit def keelNumericAttributeToMLNumericAttribute(
+      numericAttribute: NumericAttribute): MLNumericAttribute =
     MLNumericAttribute.defaultAttr
       .withName(numericAttribute.name)
       .withMax(numericAttribute.maxValue)
       .withMin(numericAttribute.minValue)
-  }
 }

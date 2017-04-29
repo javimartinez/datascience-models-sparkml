@@ -50,7 +50,7 @@ object OneRClassifierExample {
     // Transformer
 
     val (stringIndexers, columns) = dataDF.columns.map { column =>
-      val newColumn = s"idx_${ column }"
+      val newColumn = s"idx_${column}"
       (new StringIndexer().setInputCol(column).setOutputCol(newColumn), newColumn)
     }.toList.unzip
 
@@ -100,9 +100,9 @@ object OneRClassifierExample {
 //
 //    println(s" Prediction Time ${ predictionDuration } milliseconds\n")
 //
-    log.info(s"The accuracy is : ${ accuracy * 100 } % ")
+    log.info(s"The accuracy is : ${accuracy * 100} % ")
 
-    log.info(s"Model: ${ model.bestModel.toString() }")
+    log.info(s"Model: ${model.bestModel.toString()}")
 
     spark.stop()
 

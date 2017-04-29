@@ -21,30 +21,31 @@ import fastparse.all._
 sealed abstract class KeelAttribute(name: String)
 
 // divide into Integer/RealAttribute
-case class NumericAttribute(name: String, minValue: Double, maxValue: Double) extends KeelAttribute(name)
+case class NumericAttribute(name: String, minValue: Double, maxValue: Double)
+    extends KeelAttribute(name)
 
 case class CategoricalAttribute(name: String) extends KeelAttribute(name)
 
 object HeaderParser extends BasicsParser {
-
 
   val attributeName = P(CharsWhile(x => x != ' ').!)
 
   val attributeType: Parser[String] = P("integer".! | "real".!)
 
   val categoricalAttribute: Parser[KeelAttribute] =
-    P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ bracedBlock(alphaNumeric) ~ End)
-      .map {
-        case (atname, _) => // TODO: Esto no se puede quedar así, necesita refactor urgente. Solo para avanzar en el algoritmo
-          CategoricalAttribute(atname)
-      }
+    P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ bracedBlock(alphaNumeric) ~ End).map {
+      case (atname, _) => // TODO: Esto no se puede quedar así, necesita refactor urgente. Solo para avanzar en el algoritmo
+        CategoricalAttribute(atname)
+    }
 
-  val numericAttribute: Parser[KeelAttribute] = P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ attributeType ~ whiteSpaces ~ squareBrackedBlock(double) ~ End) // TODO: workaround
-    .map {
+  val numericAttribute: Parser[KeelAttribute] = P(
+    "@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ attributeType ~ whiteSpaces ~ squareBrackedBlock(
+      double) ~ End) // TODO: workaround
+  .map {
     case (atname, atType, vector) =>
       atType match {
         case "integer" => NumericAttribute(atname, vector(0), vector(1))
-        case "real" => NumericAttribute(atname, vector(0), vector(1))
+        case "real"    => NumericAttribute(atname, vector(0), vector(1))
       }
   }
 

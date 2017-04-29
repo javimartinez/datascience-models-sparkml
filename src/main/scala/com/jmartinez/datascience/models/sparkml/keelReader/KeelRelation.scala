@@ -27,19 +27,21 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.sources.{ BaseRelation, InsertableRelation, PrunedScan, TableScan }
 import org.apache.spark.sql.types._
 
-case class KeelRelation(baseRDD: () => RDD[String],
-                        location: Option[String],
-                        useHeader: Boolean = false,
-                        delimiter: Char = ',',
-                        quote: Character = '"',
-                        escape: Character = null,
-                        comment: Character = null,
-                        treatEmptyValuesAsNulls: Boolean,
-                        userSchema: StructType,
-                        codec: String = null,
-                        nullValue: String = "",
-                        dateFormat: String = null,
-                        maxCharsPerCol: Int = 100000)(@transient val sqlContext: SQLContext)
+case class KeelRelation(
+    baseRDD: () => RDD[String],
+    location: Option[String],
+    useHeader: Boolean = false,
+    delimiter: Char = ',',
+    quote: Character = '"',
+    escape: Character = null,
+    comment: Character = null,
+    treatEmptyValuesAsNulls: Boolean,
+    userSchema: StructType,
+    codec: String = null,
+    nullValue: String = "",
+    dateFormat: String = null,
+    maxCharsPerCol: Int = 100000
+)(@transient val sqlContext: SQLContext)
     extends BaseRelation
     with TableScan
     with PrunedScan
@@ -171,7 +173,7 @@ case class KeelRelation(baseRDD: () => RDD[String],
     }
   }
 
-  private def parseCSV(iter: Iterator[String], csvFormat: CSVFormat): Iterator[Array[String]] = {
+  private def parseCSV(iter: Iterator[String], csvFormat: CSVFormat): Iterator[Array[String]] =
     iter.flatMap { line =>
       try {
         val records = CSVParser.parse(line, csvFormat).getRecords
@@ -189,7 +191,6 @@ case class KeelRelation(baseRDD: () => RDD[String],
           None
       }
     }
-  }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = ???
 

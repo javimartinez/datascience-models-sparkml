@@ -74,7 +74,7 @@ object TypeCast {
           new Date(dateFormatter.parse(datum).getTime)
         case _: DateType   => Date.valueOf(datum)
         case _: StringType => datum
-        case _             => throw new RuntimeException(s"Unsupported type: ${ castType.typeName }")
+        case _             => throw new RuntimeException(s"Unsupported type: ${castType.typeName}")
       }
     }
   }
@@ -86,7 +86,7 @@ object TypeCast {
     *
     */
   @throws[IllegalArgumentException]
-  def toChar(str: String): Char = {
+  def toChar(str: String): Char =
     if (str.charAt(0) == '\\') {
       str.charAt(1) match {
         case 't'                        => '\t'
@@ -104,5 +104,4 @@ object TypeCast {
     } else {
       throw new IllegalArgumentException(s"Delimiter cannot be more than one character: $str")
     }
-  }
 }
