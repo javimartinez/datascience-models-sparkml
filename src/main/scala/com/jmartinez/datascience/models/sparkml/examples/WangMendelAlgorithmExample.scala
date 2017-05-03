@@ -79,6 +79,7 @@ object WangMendelAlgorithmExample {
     val betterModel: CrossValidatorModel = cv.fit(tranformedData)
     val result                           = betterModel.transform(tranformedData)
 
+
     val accuracy = evaluator.evaluate(result)
     println(s"The accuracy is: ${accuracy * 100}")
     println(s"The simple error is: ${(1 - accuracy) * 100} ")
