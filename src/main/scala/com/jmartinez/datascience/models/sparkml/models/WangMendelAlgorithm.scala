@@ -108,18 +108,20 @@ final class WangMendelModel(
 
   override protected def predict(features: DenseVector): Double = {
 
-    val (consequentIndex, _) = {
-      val consequentsDegreeMap = collection.mutable.Map.empty[Int, Double]
+    val arrayAcc = Array.fill[Double](10) { 0.0 }
+
+    val consequentIndex = {
       ruleBase.foreach { rule =>
-        consequentsDegreeMap += ((rule.consequent,
-                                  WangMendelUtils.evaluateMembershipAntecedents(
-                                    features.toArray,
-                                    rule.antecedents,
-                                    fuzzyPartitionsFeatures
-                                  )))
+        arrayAcc.update(rule.consequent,
+          arrayAcc(rule.consequent) + WangMendelUtils.evaluateMembershipAntecedents(
+            features.toArray,
+            rule.antecedents,
+            fuzzyPartitionsFeatures
+          ))
       }
-      consequentsDegreeMap.maxBy(_._2) // max of accumulator degree
+      arrayAcc.zipWithIndex.maxBy(_._1)._2
     }
+
     fuzzyPartitionsLabel.regions(consequentIndex) match {
       case fr: FuzzyRegionSingleton => fr.center
       case _                        => 0
@@ -152,7 +154,7 @@ final class WangMendelAlgorithm(override val uid: String)
         (features.toArray, label)
     }
 
-    datasetRdd.persist(StorageLevel.MEMORY_AND_DISK)
+//    datasetRdd.persist(StorageLevel.MEMORY_AND_DISK)
 
     // Step 1: Divide de Input and Output Spaces into Fuzzy Regions
 
@@ -198,6 +200,12 @@ final class WangMendelAlgorithm(override val uid: String)
       }
       .values
       .collect()
+
+    println(s"The size of rule base is: ${ruleBase.length}")
+    println(s"rule baseeee")
+
+    val a = ruleBase.map(r => r.consequent)
+    a.distinct.foreach(println)
 
     new WangMendelModel(uid, ruleBase, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
   }

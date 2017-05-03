@@ -6,7 +6,7 @@ echo 'One argument is necessary!!!'
 exit 0
 else
 
-sbt clean assembly
+#sbt clean assembly
 
 #docker exec -it spark-master /bin/bash ./bin/spark-submit \
 # --master spark://master:7077 \

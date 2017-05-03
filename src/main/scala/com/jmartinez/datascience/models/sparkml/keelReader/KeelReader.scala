@@ -31,7 +31,7 @@ object KeelReader {
     def keelFile(filePath: String): DataFrame = {
 
       val rdd: RDD[String] =
-        spark.sparkContext.textFile(filePath)
+        spark.sparkContext.textFile(filePath, 6) //TODO: 6 ???
 
       val (headerLines, csvLines) = divideKeelRDD(rdd)
 
@@ -68,7 +68,8 @@ object KeelReader {
     }
 
   private def structFieldFromKeelAttribute(keelAttribute: KeelAttribute): StructField =
-    keelAttribute match { // TODO: nullable harcoded
+    keelAttribute match {
+      // TODO: nullable harcoded
       case att: NumericAttribute =>
         StructField(att.name, DoubleType, false, att.toMetadata())
       case att: CategoricalAttribute =>

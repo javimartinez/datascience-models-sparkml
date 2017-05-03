@@ -35,7 +35,7 @@ worker:
   container_name: spark-worker-1
   environment:
     SPARK_CONF_DIR: /conf
-    SPARK_WORKER_CORES: 1
+    SPARK_WORKER_CORES: 2
     PARK_WORKER_INSTANCES: 1
     SPARK_WORKER_PORT: 8091
     SPARK_WORKER_WEBUI_PORT: 8092
@@ -62,7 +62,7 @@ worker2:
   container_name: spark-worker-2
   environment:
     SPARK_CONF_DIR: /conf
-    SPARK_WORKER_CORES: 1
+    SPARK_WORKER_CORES: 2
     SPARK_WORKER_INSTANCES: 1
     SPARK_WORKER_PORT: 8093
     SPARK_WORKER_WEBUI_PORT: 8094
@@ -77,7 +77,6 @@ worker2:
     - 8094:8094
   volumes:
     - ./conf/worker/:/conf
-    - ./data/:/data
     - ./:/workspace
   volumes_from:
     - logfiles
