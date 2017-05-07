@@ -18,44 +18,56 @@ package com.jmartinez.datascience.models.sparkml.examples
 
 import com.jmartinez.datascience.models.sparkml.keelReader.KeelReader._
 import com.jmartinez.datascience.models.sparkml.models.WangMendelAlgorithm
-import org.apache.log4j.{ Level, Logger }
+import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.{ StringIndexer, VectorAssembler }
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.mllib.evaluation.RegressionMetrics
-import org.apache.spark.sql.{ DataFrame, SparkSession }
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object WangMendelAlgorithmExample {
 
   def main(args: Array[String]) {
 
     // Disable INFO Log
+
+    val logger = Logger.getLogger("my logger")
+
+    logger.setLevel(Level.INFO)
+
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
 
     val spark =
       SparkSession.builder
         .appName("WangMendelAlgorithm")
-//                .master("local[4]")
+        //                .master("local[4]")
         .getOrCreate()
 
-    val data =
-//            spark.keelFile("/Users/Javi/development/data/poker.dat")
-      spark.keelFile(args(0))
+    logger.info("Wang&Mendel pipeline starts")
+
+    val trainData =
+    //            spark.keelFile("/Users/Javi/development/data/poker.dat")
+      spark.keelFile("/workspace/data/poker-5-1tra.dat")
+
+    val testData =
+      spark.keelFile("/workspace/data/poker-5-1tst.dat")
 
     val assembler =
-      new VectorAssembler().setInputCols(data.columns.dropRight(1)).setOutputCol("features")
+      new VectorAssembler().setInputCols(trainData.columns.dropRight(1)).setOutputCol("features")
 
     val stringIndexer = new StringIndexer().setInputCol("Class").setOutputCol("idx_Class")
 
-    val tranformedData: DataFrame =
-      new Pipeline().setStages(Array(assembler, stringIndexer)).fit(data).transform(data)
+    val pipelineToTransform = new Pipeline().setStages(Array(assembler, stringIndexer))
 
-    val (trainData, testData) = splitDataInToTrainAndTest(tranformedData)
+    val tranformedTrainData: DataFrame =
+      pipelineToTransform.fit(trainData).transform(trainData)
 
-    println(s"Train data size: ${trainData.count}")
-    println(s"Test  data size: ${testData.count}")
+
+    val transformedTestData: DataFrame = pipelineToTransform.fit(testData).transform(testData)
+
+
 
     val evaluator = new MulticlassClassificationEvaluator()
       .setLabelCol("idx_Class")
@@ -66,33 +78,39 @@ object WangMendelAlgorithmExample {
       new WangMendelAlgorithm()
         .setLabelCol("idx_Class")
         .setPredictionCol("prediction")
-        .setNumFuzzyRegions(5)
+        .setNumFuzzyRegions(3)
 
+
+    val result = wangMendelAlgorithm.fit(tranformedTrainData).transform(tranformedTrainData)
+
+    //cross validation
     //    val paramGrid = new ParamGridBuilder()
-    //      .addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(1, 2, 5, 6, 19))
+    //      .addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(1, 2, 3))
     //      .build()
-
-    //    val indexToString = new IndexToString()
 
     //    val cv: CrossValidator = new CrossValidator()
     //      .setEstimator(new Pipeline().setStages(Array(wangMendelAlgorithm)))
     //      .setEvaluator(evaluator)
     //      .setEstimatorParamMaps(paramGrid)
-    //      .setNumFolds(5)
+    //      .setNumFolds(2)
     //
-    //    val betterModel: CrossValidatorModel = cv.fit(tranformedData)
-    //    val result                           = betterModel.transform(tranformedData)
+    //
+    //    val betterModel: CrossValidatorModel = cv.fit(tranformedTrainData)
+    //
+    //    betterModel.avgMetrics.foreach(println)
 
-    val result =
-      new Pipeline().setStages(Array(wangMendelAlgorithm)).fit(trainData)
-        .transform(testData)
+    //    val result =
+    //      new Pipeline().setStages(Array(wangMendelAlgorithm)).fit(trainData)
+    //        .transform(testData)
 
-    println(result.count())
+    //    println(result.count())
 
-//
-//    val accuracy = evaluator.evaluate(result)
-//    println(s"The accuracy is: ${accuracy * 100}")
-//    println(s"The simple error is: ${(1 - accuracy) * 100} ")
+    //
+
+    val accuracy = evaluator.evaluate(result)
+    println(s"The accuracy is: ${accuracy * 100}")
+    println(s"The simple error is: ${(1 - accuracy) * 100} ")
+
 
     //    evaluateRegressionModel(result, "idx_Class", "prediction")
 
@@ -100,13 +118,13 @@ object WangMendelAlgorithmExample {
   }
 
   private def evaluateRegressionModel(
-      data: DataFrame,
-      labelColName: String,
-      predictionLabel: String
-  ): Unit = {
+                                       data: DataFrame,
+                                       labelColName: String,
+                                       predictionLabel: String
+                                     ): Unit = {
     val predictions = data.select(predictionLabel).rdd.map(_.getDouble(0))
-    val labels      = data.select(labelColName).rdd.map(_.getDouble(0))
-    val RMSE        = new RegressionMetrics(predictions.zip(labels)).meanSquaredError
+    val labels = data.select(labelColName).rdd.map(_.getDouble(0))
+    val RMSE = new RegressionMetrics(predictions.zip(labels)).meanSquaredError
     println(s"Root mean squared error (RMSE): $RMSE")
   }
 
@@ -115,4 +133,6 @@ object WangMendelAlgorithmExample {
 
     (splits(0), splits(1))
   }
+
+
 }

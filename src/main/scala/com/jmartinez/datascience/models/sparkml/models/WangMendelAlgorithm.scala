@@ -17,35 +17,35 @@
 package com.jmartinez.datascience.models.sparkml.models
 
 import com.jmartinez.datascience.models.sparkml.Fuzzy.{
-  FuzzyPartition,
-  FuzzyRegionSingleton,
-  FuzzyRule
+FuzzyPartition,
+FuzzyRegionSingleton,
+FuzzyRule
 }
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml._
 import org.apache.spark.ml.attribute.{
-  Attribute,
-  AttributeGroup,
-  NominalAttribute,
-  NumericAttribute
+Attribute,
+AttributeGroup,
+NominalAttribute,
+NumericAttribute
 }
 import org.apache.spark.ml.linalg.DenseVector
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{ DoubleType, StructField, StructType }
-import org.apache.spark.sql.{ Dataset, Row }
+import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
+import org.apache.spark.sql.{Dataset, Row}
 import org.apache.spark.storage.StorageLevel
 
 object WangMendelUtils {
 
   def evaluateMembershipAntecedents(
-      features: Array[Double],
-      indexOfFuzzyRegionRule: Array[Int],
-      fuzzyPartitions: Array[FuzzyPartition]
-  ): Double = {
+                                     features: Array[Double],
+                                     indexOfFuzzyRegionRule: Array[Int],
+                                     fuzzyPartitions: Array[FuzzyPartition]
+                                   ): Double = {
     val degrees: Array[Double] = features.zipWithIndex.map {
       case (feaureValue, featureIndex) =>
         fuzzyPartitions(featureIndex)
@@ -71,28 +71,31 @@ object WangMendelUtils {
     * Not tested yet
     */
   def getMaxAndMinOfAllFeatures(
-      dataset: RDD[Row],
-      attributes: Array[Attribute]
-  ): Array[(Int, (Double, Double))] = {
+                                 dataset: RDD[Row],
+                                 attributes: Array[Attribute]
+                               ): Array[(Int, (Double, Double))] = {
 
     val attributesIndex = attributes.flatMap(_.index) // no me asegura que esten todos los atributos BroadCast??
 
-    dataset.flatMap {
-      case (Row(features: Vector, _)) => //vectorUDT
-        attributesIndex.map(idx => (idx, (features(idx), features(idx))))
-    }.reduceByKey {
-      case ((elemToMax1, elemToMin1), (elemToMax2, elemToMin2)) =>
-        (scala.math.max(elemToMax1, elemToMax2), scala.math.min(elemToMin1, elemToMin2))
-    }.collect
+    dataset
+      .flatMap {
+        case (Row(features: Vector, _)) => //vectorUDT
+          attributesIndex.map(idx => (idx, (features(idx), features(idx))))
+      }
+      .reduceByKey {
+        case ((elemToMax1, elemToMin1), (elemToMax2, elemToMin2)) =>
+          (scala.math.max(elemToMax1, elemToMax2), scala.math.min(elemToMin1, elemToMin2))
+      }
+      .collect
   }
 }
 
 final class WangMendelModel(
-    override val uid: String,
-    val ruleBase: Array[FuzzyRule],
-    val fuzzyPartitionsFeatures: Array[FuzzyPartition],
-    val fuzzyPartitionsLabel: FuzzyPartition
-) extends PredictionModel[DenseVector, WangMendelModel] {
+                             override val uid: String,
+                             val ruleBase: Array[FuzzyRule],
+                             val fuzzyPartitionsFeatures: Array[FuzzyPartition],
+                             val fuzzyPartitionsLabel: FuzzyPartition
+                           ) extends PredictionModel[DenseVector, WangMendelModel] {
 
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = {
@@ -108,7 +111,9 @@ final class WangMendelModel(
 
   override protected def predict(features: DenseVector): Double = {
 
-    val arrayAcc = Array.fill[Double](10) { 0.0 }
+    val arrayAcc = Array.fill[Double](10) {
+      0.0
+    }
 
     val consequentIndex = {
       ruleBase.foreach { rule =>
@@ -124,13 +129,13 @@ final class WangMendelModel(
 
     fuzzyPartitionsLabel.regions(consequentIndex) match {
       case fr: FuzzyRegionSingleton => fr.center
-      case _                        => 0
+      case _ => 0
     }
   }
 }
 
 final class WangMendelAlgorithm(override val uid: String)
-    extends Predictor[DenseVector, WangMendelAlgorithm, WangMendelModel]
+  extends Predictor[DenseVector, WangMendelAlgorithm, WangMendelModel]
     with WangMendelParams {
 
   def this() = this(Identifiable.randomUID("Wang&Mendel"))
@@ -154,7 +159,7 @@ final class WangMendelAlgorithm(override val uid: String)
         (features.toArray, label)
     }
 
-//    datasetRdd.persist(StorageLevel.MEMORY_AND_DISK)
+    //    datasetRdd.persist(StorageLevel.MEMORY_AND_DISK)
 
     // Step 1: Divide de Input and Output Spaces into Fuzzy Regions
 
@@ -167,7 +172,7 @@ final class WangMendelAlgorithm(override val uid: String)
     val fuzzyPartitionsOfFeatures: Array[FuzzyPartition] = features.map {
       case att: NumericAttribute =>
         FuzzyPartition(att.min.get, att.max.get, $(numFuzzyRegions)) // create fuzzy partition
-      case _ => throw new Exception("Not supported")
+      case _ => throw new Exception("Not supported aqui 1")
     }
 
     val fuzzyPartitionsOfLabel: FuzzyPartition =
@@ -176,9 +181,9 @@ final class WangMendelAlgorithm(override val uid: String)
         case att: NumericAttribute =>
           FuzzyPartition(att.max.get.toInt)
         case att: NominalAttribute =>
-          FuzzyPartition(att.values.getOrElse(throw new Exception("Not supported")).length)
-        case _ =>
-          throw new Exception("Not supported")
+          FuzzyPartition(att.values.getOrElse(throw new Exception("Not supported aqui 2 ")).length)
+        case att =>
+          throw new Exception("Not supported aqui 3")
       }
 
     // MEJOR SE PUEDE UNIR EN UN SOLO ARRAY[FUZZYPARTITION] Y CON EL INDEX SABER SI ES DE FEATURES O LABEL
@@ -187,10 +192,12 @@ final class WangMendelAlgorithm(override val uid: String)
     // Step 3: Assign degree for each rule
     // Step 4: Create a Combined Fuzzy Rule Base
 
-    val ruleBase = datasetRdd.map {
-      case (features: Array[Double], label: Double) =>
-        generateFuzzyRule(features, label, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
-    }.map(fuzzyRule => (fuzzyRule.getLabelsOfAntecedentsCodified, fuzzyRule))
+    val ruleBase = datasetRdd
+      .map {
+        case (features: Array[Double], label: Double) =>
+          generateFuzzyRule(features, label, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
+      }
+      .map(fuzzyRule => (fuzzyRule.getLabelsOfAntecedentsCodified, fuzzyRule))
       .reduceByKey {
         // in conflict rules choose the rule with maximum degree
         case (fuzzyRule1: FuzzyRule, fuzzyRule2: FuzzyRule) =>
@@ -201,21 +208,17 @@ final class WangMendelAlgorithm(override val uid: String)
       .values
       .collect()
 
-    println(s"The size of rule base is: ${ruleBase.length}")
-    println(s"rule baseeee")
-
-    val a = ruleBase.map(r => r.consequent)
-    a.distinct.foreach(println)
+    logInfo(s"The rule base size is: ${ruleBase.length}")
 
     new WangMendelModel(uid, ruleBase, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
   }
 
   def generateFuzzyRule(
-      features: Array[Double],
-      label: Double,
-      fuzzyPartitionsOfFeatures: Array[FuzzyPartition],
-      fuzzyPartitionsOfLabel: FuzzyPartition
-  ): FuzzyRule = {
+                         features: Array[Double],
+                         label: Double,
+                         fuzzyPartitionsOfFeatures: Array[FuzzyPartition],
+                         fuzzyPartitionsOfLabel: FuzzyPartition
+                       ): FuzzyRule = {
 
     // find the better fuzzy partition for each feature
     val indexsOfFuzzyRegionsOfFeatures = features.zipWithIndex.map {

@@ -24,7 +24,7 @@ sealed abstract class KeelAttribute(name: String)
 case class NumericAttribute(name: String, minValue: Double, maxValue: Double)
     extends KeelAttribute(name)
 
-case class CategoricalAttribute(name: String) extends KeelAttribute(name)
+case class NominalAttribute(name: String) extends KeelAttribute(name)
 
 object HeaderParser extends BasicsParser {
 
@@ -34,8 +34,8 @@ object HeaderParser extends BasicsParser {
 
   val categoricalAttribute: Parser[KeelAttribute] =
     P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ bracedBlock(alphaNumeric) ~ End).map {
-      case (atname, _) => // TODO: Esto no se puede quedar así, necesita refactor urgente. Solo para avanzar en el algoritmo
-        CategoricalAttribute(atname)
+      case (atname, x) => // TODO: Esto no se puede quedar así, necesita refactor urgente. Solo para avanzar en el algoritmo
+        NominalAttribute(atname) // TODO: en x tenemos los valores que toma el attributo
     }
 
   val numericAttribute: Parser[KeelAttribute] = P(
