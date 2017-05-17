@@ -41,7 +41,7 @@ trait BasicsParser extends Helpers {
   val double = // white space in the beging for situations like [0, 15]
   P(" ".? ~ "-".? ~ integral ~ ".".? ~ integral.rep(min = 1, max = 16).?).!.map(_.toDouble) //TODO: tener en cuenta negativos
 
-  val alphaNumeric = P(CharIn('0' to '9') | CharIn('a' to 'z') | CharIn('A' to 'Z')).rep.!
+  val alphaNumeric = P(CharIn('0' to '9') | CharIn('a' to 'z') | CharIn('A' to 'Z') | CharIn("_") | CharIn("-") | CharIn("_-_") | P("(") | P(")") | P("/") | P("\\") | P(".") | P(":") | P("]") | P("[") | P(";")).rep.!
 
   val openSquareBracket = P("[")
 

@@ -28,10 +28,10 @@ object KeelReader {
 
   implicit class KeelReader(spark: SparkSession) {
 
-    def keelFile(filePath: String): DataFrame = {
+    def keelFile(filePath: String, numPartitions:Int): DataFrame = {
 
       val rdd: RDD[String] =
-        spark.sparkContext.textFile(filePath, 100) //TODO: 6 ???
+        spark.sparkContext.textFile(filePath, numPartitions) //TODO: 6 ???
 
       val (headerLines, csvLines) = divideKeelRDD(rdd)
 
@@ -59,13 +59,20 @@ object KeelReader {
 
   }
 
-  def parseKeelAttributeLine(line: String): KeelAttribute =
+  def parseKeelAttributeLine(line: String): KeelAttribute = {
     keelHeaderParser.parse(line) match {
       case Parsed.Success(keelAttribute, _) =>
+        keelAttribute match {
+          case att:NominalAttribute =>
+            println(att.name)
+          case att:NumericAttribute =>
+            println(att.name)
+        }
         keelAttribute
       case Parsed.Failure(_, _, extraFailure) =>
         throw new Exception(extraFailure.traced.trace)
     }
+  }
 
   private def structFieldFromKeelAttribute(keelAttribute: KeelAttribute): StructField =
     keelAttribute match {

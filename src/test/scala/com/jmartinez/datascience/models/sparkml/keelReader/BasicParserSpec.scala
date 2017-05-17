@@ -17,11 +17,15 @@
 package com.jmartinez.datascience.models.sparkml.keelReader
 
 import org.scalatest.FlatSpec
-
+import HeaderParser._
 
 class BasicParserSpec  extends FlatSpec with ParserMatchers with BasicsParser {
 
   it should "parse a double" in {
     double.parse("0.0") should parsedTo[Double](0)
+  }
+
+  it should "parse attribute name" in {
+    attributeName.parse("CASE_STATE") should parsedTo[String]("CASE_STATE")
   }
 }

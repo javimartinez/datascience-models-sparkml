@@ -166,7 +166,7 @@ final class OneRClassifier(override val uid: String)
       val partialDF = dataToTrainRDD.map {
         case Row(features: Vector, label: Double) =>
           val attributeValue = features.toArray(attribute.index.get)
-          val counter        = Array.fill[Int](numClasses.get) {0}
+          val counter        = Array.fill[Int](numClasses.get) { 0 }
           counter(label.toInt) += 1
 
           (attributeValue, counter) // The label is not necessary

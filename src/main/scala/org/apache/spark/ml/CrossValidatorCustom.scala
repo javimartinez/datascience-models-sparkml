@@ -40,16 +40,22 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row}
   * Params for [[CrossValidator]] and [[CrossValidatorModel]].
   */
 private[ml] trait CrossValidatorParams extends ValidatorParams {
+
   /**
     * Param for number of folds for cross validation.  Must be &gt;= 2.
     * Default: 3
     *
     * @group param
     */
-  val numFolds: IntParam = new IntParam(this, "numFolds",
-    "number of folds for cross validation (>= 2)", ParamValidators.gtEq(2))
+  val numFolds: IntParam = new IntParam(this,
+    "numFolds",
+    "number of folds for cross validation (>= 2)",
+    ParamValidators.gtEq(2))
 
-  val transformator: Param[Pipeline] = new Param(this, "transformator", "transformator for selection")
+  val transformator: Param[Pipeline] =
+    new Param(this, "transformator", "transformator for selection")
+
+  val numPartitions: IntParam = new IntParam(this, "numPartitions", "numPartitions")
 
   /** @group getParam */
   def getNumFolds: Int = $(numFolds)
@@ -67,7 +73,9 @@ private[ml] trait CrossValidatorParams extends ValidatorParams {
 @Since("1.2.0")
 class CrossValidator @Since("1.2.0")(@Since("1.4.0") override val uid: String)
   extends Estimator[CrossValidatorModel]
-    with CrossValidatorParams with MLWritable with Logging {
+    with CrossValidatorParams
+    with MLWritable
+    with Logging {
 
   @Since("1.2.0")
   def this() = this(Identifiable.randomUID("cv"))
@@ -92,6 +100,8 @@ class CrossValidator @Since("1.2.0")(@Since("1.4.0") override val uid: String)
   @Since("1.2.0")
   def setNumFolds(value: Int): this.type = set(numFolds, value)
 
+  def setNumPartitions(value:Int): this.type = set(numPartitions,value)
+
   /** @group setParam */
   @Since("2.0.0")
   def setSeed(value: Long): this.type = set(seed, value)
@@ -109,37 +119,43 @@ class CrossValidator @Since("1.2.0")(@Since("1.4.0") override val uid: String)
     val metricsTrainTime = new Array[Long]($(numFolds))
     val metricsValidationTime = new Array[Long]($(numFolds))
     val (splits, schema) = getSplits(dataset)
-    splits.zipWithIndex.foreach { case ((training, validation), splitIndex) =>
-      val trainingDataset = sparkSession.createDataFrame(training, schema).cache()
-      val validationDataset = sparkSession.createDataFrame(validation, schema).cache()
-      // multi-model training
-      logInfo(s"Train split $splitIndex with multiple sets of parameters.")
-      val (timeToTrain, models) = getExecutionTime(est.fit(trainingDataset, epm).asInstanceOf[Seq[Model[_]]])
-      metricsTrainTime(splitIndex) = timeToTrain
-      trainingDataset.unpersist()
-      var i = 0
-      while (i < numModels) {
-        // TODO: duplicate evaluator to take extra params from input
-        val (timeToValidation,metric) = getExecutionTime(eval.evaluate(models(i).transform(validationDataset, epm(i))))
-        metricsValidationTime(splitIndex) = timeToValidation // FAILLLL, Se va ha actualizar muchas veces, dependiendo del numero de parametros
-        logInfo(s"Got metric $metric for model trained with ${epm(i)}.")
-        metrics(i) += metric
-        i += 1
-      }
-      validationDataset.unpersist()
+    splits.zipWithIndex.foreach {
+      case ((training, validation), splitIndex) =>
+        val trainingDataset = sparkSession.createDataFrame(training, schema).cache()
+        val validationDataset = sparkSession.createDataFrame(validation, schema).cache()
+        // multi-model training
+        logInfo(s"Train split $splitIndex with multiple sets of parameters.")
+        val (timeToTrain, models) =
+          getExecutionTime(est.fit(trainingDataset, epm).asInstanceOf[Seq[Model[_]]])
+        metricsTrainTime(splitIndex) = timeToTrain
+        trainingDataset.unpersist()
+        var i = 0
+        while (i < numModels) {
+          // TODO: duplicate evaluator to take extra params from input
+          val (timeToValidation, metric) =
+            getExecutionTime(eval.evaluate(models(i).transform(validationDataset, epm(i))))
+          metricsValidationTime(splitIndex) = timeToValidation // FAILLLL, Se va ha actualizar muchas veces, dependiendo del numero de parametros
+          logInfo(s"Got metric $metric for model trained with ${epm(i)}.")
+          metrics(i) += metric
+          i += 1
+        }
+        validationDataset.unpersist()
     }
     f2jBLAS.dscal(numModels, 1.0 / $(numFolds), metrics, 1)
     logInfo(s"Average cross-validation metrics: ${metrics.toSeq}")
     val (bestMetric, bestIndex) =
       if (eval.isLargerBetter) metrics.zipWithIndex.maxBy(_._1)
       else metrics.zipWithIndex.minBy(_._1)
-    println(s"Best set of parameters:\n${epm(bestIndex)}")
-    println(s"Best cross-validation metric: $bestMetric")
-//    val bestModel = est.fit(dataset, epm(bestIndex)).asInstanceOf[Model[_]]
+
+    val metrictsAsString: List[String] =
+      List(s"Best set of parameters:\n${epm(bestIndex)}\n",
+        s"Best cross-validation metric: $bestMetric\n",
+        s"Average train ${metricsTrainTime.sum / $(numFolds)} milliseconds \n",
+        s"Average test ${metricsValidationTime.sum / $(numFolds)} milliseconds \n")
+    //    val bestModel = est.fit(dataset, epm(bestIndex)).asInstanceOf[Model[_]]
     // average time
-    println(s"Average train ${metricsTrainTime.sum/$(numFolds)} milliseconds ")
-    println(s"Average test ${metricsValidationTime.sum/$(numFolds)} milliseconds")
-    copyValues(new CrossValidatorModel(uid, metrics).setParent(this))
+
+    copyValues(new CrossValidatorModel(uid, metrics, metrictsAsString).setParent(this))
   }
 
   @Since("1.4.0")
@@ -169,27 +185,26 @@ class CrossValidator @Since("1.2.0")(@Since("1.4.0") override val uid: String)
 
     val datasets = dataset.rdd.map {
       case Row(trainPath: String, testPath: String) => (trainPath, testPath)
-    }.collect()
-      .map {
-        case (trainFilePath, validationFilePath) =>
-          val trainData = sparkSession.keelFile(trainFilePath)
-          val validationData = sparkSession.keelFile(validationFilePath)
-          ($(transformator).fit(trainData).transform(trainData), $(transformator).fit(validationData).transform(validationData))
-      }
+    }.collect().map {
+      case (trainFilePath, validationFilePath) =>
+        val trainData = sparkSession.keelFile(trainFilePath,$(numPartitions))
+        val validationData = sparkSession.keelFile(validationFilePath, $(numPartitions))
+        ($(transformator).fit(trainData).transform(trainData),
+          $(transformator).fit(validationData).transform(validationData))
+    }
 
     (datasets.map { case (d1, d2) => (d1.rdd, d2.rdd) }, datasets(0)._1.schema)
   }
 
-
   private def getExecutionTime[R](block: => R): (Long, R) = {
-    val t0     = System.nanoTime()
-    val result = block // call-by-name
-    val t1     = System.nanoTime()
+    val t0 = System.nanoTime()
+    val result = block
+    // call-by-name
+    val t1 = System.nanoTime()
     (NANOSECONDS.toMillis(t1 - t0), result)
   }
 
 }
-
 
 @Since("1.6.0")
 object CrossValidator extends MLReadable[CrossValidator] {
@@ -236,39 +251,43 @@ object CrossValidator extends MLReadable[CrossValidator] {
   * metric across folds and uses this model to transform input data. CrossValidatorModel
   * also tracks the metrics for each param map evaluated.
   *
-//  * @param bestModel  The best model selected from k-fold cross validation.
+  * //  * @param bestModel  The best model selected from k-fold cross validation.
+  *
   * @param avgMetrics Average cross-validation metrics for each paramMap in
   *                   `CrossValidator.estimatorParamMaps`, in the corresponding order.
   */
 @Since("1.2.0")
-class CrossValidatorModel private[ml](
-                                       @Since("1.4.0") override val uid: String,
-                                       @Since("1.5.0") val avgMetrics: Array[Double])
-  extends Model[CrossValidatorModel] with CrossValidatorParams with MLWritable {
+class CrossValidatorModel private[ml](@Since("1.4.0") override val uid: String,
+                                      @Since("1.5.0") val avgMetrics: Array[Double],
+                                      val metrictsAsString: List[String])
+  extends Model[CrossValidatorModel]
+    with CrossValidatorParams
+    with MLWritable {
 
   /** A Python-friendly auxiliary constructor. */
-  private[ml] def this(uid: String, bestModel: Model[_], avgMetrics: JList[Double]) = {
-    this(uid, avgMetrics.asScala.toArray)
+  private[ml] def this(uid: String,
+                       bestModel: Model[_],
+                       avgMetrics: JList[Double],
+                       metrictsAsString: List[String]) = {
+    this(uid, avgMetrics.asScala.toArray, metrictsAsString)
   }
 
   @Since("2.0.0")
   override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
     dataset.toDF()
-//    bestModel.transform(dataset)
+    //    bestModel.transform(dataset)
   }
 
   @Since("1.4.0")
-  override def transformSchema(schema: StructType): StructType = {
+  override def transformSchema(schema: StructType): StructType =
     schema
-//    bestModel.transformSchema(schema)
-  }
+
+  //    bestModel.transformSchema(schema)
 
   @Since("1.4.0")
   override def copy(extra: ParamMap): CrossValidatorModel = {
-    val copied = new CrossValidatorModel(
-      uid,
-      avgMetrics.clone())
+    val copied = new CrossValidatorModel(uid, avgMetrics.clone(), metrictsAsString)
     copyValues(copied, extra).setParent(parent)
   }
 
@@ -285,8 +304,8 @@ object CrossValidatorModel extends MLReadable[CrossValidatorModel] {
   @Since("1.6.0")
   override def load(path: String): CrossValidatorModel = super.load(path)
 
-  private[CrossValidatorModel]
-  class CrossValidatorModelWriter(instance: CrossValidatorModel) extends MLWriter {
+  private[CrossValidatorModel] class CrossValidatorModelWriter(instance: CrossValidatorModel)
+    extends MLWriter {
 
     ValidatorParams.validateParams(instance)
 
@@ -295,7 +314,7 @@ object CrossValidatorModel extends MLReadable[CrossValidatorModel] {
       val extraMetadata = "avgMetrics" -> instance.avgMetrics.toSeq
       ValidatorParams.saveImpl(path, instance, sc, Some(extraMetadata))
       val bestModelPath = new Path(path, "bestModel").toString
-//      instance.bestModel.asInstanceOf[MLWritable].save(bestModelPath)
+      //      instance.bestModel.asInstanceOf[MLWritable].save(bestModelPath)
     }
   }
 
@@ -314,8 +333,9 @@ object CrossValidatorModel extends MLReadable[CrossValidatorModel] {
       val bestModelPath = new Path(path, "bestModel").toString
       val bestModel = DefaultParamsReader.loadParamsInstance[Model[_]](bestModelPath, sc)
       val avgMetrics = (metadata.metadata \ "avgMetrics").extract[Seq[Double]].toArray
-      val model = new CrossValidatorModel(metadata.uid, avgMetrics)
-      model.set(model.estimator, estimator)
+      val model = new CrossValidatorModel(metadata.uid, avgMetrics, List())
+      model
+        .set(model.estimator, estimator)
         .set(model.evaluator, evaluator)
         .set(model.estimatorParamMaps, estimatorParamMaps)
         .set(model.numFolds, numFolds)

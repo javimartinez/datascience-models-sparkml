@@ -32,7 +32,7 @@ object HeaderParser extends BasicsParser {
 
   val attributeType: Parser[String] = P("integer".! | "real".!)
 
-  val categoricalAttribute: Parser[KeelAttribute] =
+  val nominalAttribute: Parser[KeelAttribute] =
     P("@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ bracedBlock(alphaNumeric) ~ End).map {
       case (atname, x) => // TODO: Esto no se puede quedar así, necesita refactor urgente. Solo para avanzar en el algoritmo
         NominalAttribute(atname) // TODO: en x tenemos los valores que toma el attributo
@@ -55,6 +55,6 @@ object HeaderParser extends BasicsParser {
 
   val outputParser = P("@outputs" ~ whiteSpaces ~ CharIn('a' to 'z').!)
 
-  val keelHeaderParser: Parser[KeelAttribute] = P(categoricalAttribute | numericAttribute)
+  val keelHeaderParser: Parser[KeelAttribute] = P(nominalAttribute | numericAttribute).log()
 
 }

@@ -22,3 +22,7 @@ fi
 
 #  --deploy-mode cluster \
 
+# entrar al docker
+
+#docker exec -it spark-master /bin/bash
+

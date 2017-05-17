@@ -35,7 +35,7 @@ object KeelReaderExample {
 
     // Crates a DataFrame
     val dataframe =
-      spark.keelFile("/Users/Javi/Development/datascience-models-sparkml/data/poker.dat")
+      spark.keelFile("/Users/Javi/Development/datascience-models-sparkml/data/poker.dat",10)
 
     println(s"The size of DataFrame is: ${dataframe.count}")
 
