@@ -41,7 +41,7 @@ object WangMendelAlgorithmExampleShuttle {
 
     val spark =
       SparkSession.builder.appName("WangMendelAlgorithm")
-          .master("local[4]")
+        .master("local[4]")
         .getOrCreate()
 
     logger.info("Wang&Mendel pipeline starts")
@@ -57,49 +57,64 @@ object WangMendelAlgorithmExampleShuttle {
     //    val dataSetName = "shuttle"
 
     //Poker
-//    val inputsColumns = Array("S1", "C1", "S2", "C2", "S3", "C3", "S4", "C4", "S5", "C5")
-//    val ouputColumn = "Class"
-//    val outputColumnIdx = "idx_Class"
-//    val basePath = args(0)
-//    val dataSetName = args(1)
+
+    //    val basePath = args(0)
+    //    val dataSetName = args(1)
     //    val basePath        = "/Users/Javi/development/data/poker-5-fold/"
     //    val dataSetName     = "poker"
 
     // fars
-    val columsString = Array(
-      "CASE_STATE",
-      "SEX",
-      "PERSON_TYPE",
-      "SEATING_POSITION",
-      "RESTRAINT_SYSTEM-USE",
-      "AIR_BAG_AVAILABILITY/DEPLOYMENT",
-      "EJECTION",
-      "EJECTION_PATH",
-      "EXTRICATION",
-      "NON_MOTORIST_LOCATION",
-      "POLICE_REPORTED_ALCOHOL_INVOLVEMENT",
-      "METHOD_ALCOHOL_DETERMINATION",
-      "ALCOHOL_TEST_TYPE",
-      "ALCOHOL_TEST_RESULT",
-      "POLICE-REPORTED_DRUG_INVOLVEMENT",
-      "METHOD_OF_DRUG_DETERMINATION",
-      "DRUG_TEST_TYPE_(1_of_3)",
-      "DRUG_TEST_TYPE_(2_of_3)",
-      "DRUG_TEST_TYPE_(3_of_3)",
-      "HISPANIC_ORIGIN",
-      "TAKEN_TO_HOSPITAL",
-      "RELATED_FACTOR_(1)-PERSON_LEVEL",
-      "RELATED_FACTOR_(2)-PERSON_LEVEL",
-      "RELATED_FACTOR_(3)-PERSON_LEVEL",
-      "RACE")
 
-    val columsRealIdx = Array("AGE", "DRUG_TEST_RESULTS_(1_of_3)", "DRUG_TEST_RESULTS_(2_of_3)","DRUG_TEST_RESULTS_(3_of_3)")
-    val columsStringIdx = columsString.map(att => s"${att}_idx")
-    val inputsColumns = columsStringIdx ++ columsRealIdx
-    val ouputColumn = "INJURY_SEVERITY"
-    val outputColumnIdx = "INJURY_SEVERITY_idx"
+    //    val columsString = Array(
+    //      "CASE_STATE",
+    //      "SEX",
+    //      "PERSON_TYPE",
+    //      "SEATING_POSITION",
+    //      "RESTRAINT_SYSTEM-USE",
+    //      "AIR_BAG_AVAILABILITY/DEPLOYMENT",
+    //      "EJECTION",
+    //      "EJECTION_PATH",
+    //      "EXTRICATION",
+    //      "NON_MOTORIST_LOCATION",
+    //      "POLICE_REPORTED_ALCOHOL_INVOLVEMENT",
+    //      "METHOD_ALCOHOL_DETERMINATION",
+    //      "ALCOHOL_TEST_TYPE",
+    //      "ALCOHOL_TEST_RESULT",
+    //      "POLICE-REPORTED_DRUG_INVOLVEMENT",
+    //      "METHOD_OF_DRUG_DETERMINATION",
+    //      "DRUG_TEST_TYPE_(1_of_3)",
+    //      "DRUG_TEST_TYPE_(2_of_3)",
+    //      "DRUG_TEST_TYPE_(3_of_3)",
+    //      "HISPANIC_ORIGIN",
+    //      "TAKEN_TO_HOSPITAL",
+    //      "RELATED_FACTOR_(1)-PERSON_LEVEL",
+    //      "RELATED_FACTOR_(2)-PERSON_LEVEL",
+    //      "RELATED_FACTOR_(3)-PERSON_LEVEL",
+    //      "RACE")
+    //
+    //    val columsRealIdx = Array("AGE", "DRUG_TEST_RESULTS_(1_of_3)", "DRUG_TEST_RESULTS_(2_of_3)","DRUG_TEST_RESULTS_(3_of_3)")
+    //    val columsStringIdx = columsString.map(att => s"${att}_idx")
+    //    val inputsColumns = columsStringIdx ++ columsRealIdx
+    //    val ouputColumn = "INJURY_SEVERITY"
+    //    val outputColumnIdx = "INJURY_SEVERITY_idx"
+
+    //magic
+    val inputsColumns = Array("FLength",
+      "FWidth",
+      "FSize",
+      "FConc",
+      "FConc1",
+      "FAsym",
+      "FM3Long",
+      "FM3Trans",
+      "FAlpha",
+      "FDist")
+
+    val ouputColumn = "Class"
+    val outputColumnIdx = "Class_idx"
     val basePath = args(0)
     val dataSetName = args(1)
+
 
     val assembler =
       new VectorAssembler().setInputCols(inputsColumns).setOutputCol("features")
@@ -108,13 +123,13 @@ object WangMendelAlgorithmExampleShuttle {
       new StringIndexer().setInputCol(ouputColumn).setOutputCol(outputColumnIdx)
 
 
-    val stringIndexersFeatures: Array[StringIndexer] = columsString.zipWithIndex.map {
-      case (feature,index)  =>
-        new StringIndexer().setInputCol(feature).setOutputCol(columsStringIdx(index))
-    }
+    //    val stringIndexersFeatures: Array[StringIndexer] = columsString.zipWithIndex.map {
+    //      case (feature,index)  =>
+    //        new StringIndexer().setInputCol(feature).setOutputCol(columsStringIdx(index))
+    //    }
 
     val pipelineToTransform =
-      new Pipeline().setStages(stringIndexersFeatures ++ Array(assembler, stringIndexerLabel))
+      new Pipeline().setStages(Array(assembler, stringIndexerLabel))
 
 
     val evaluator = new MulticlassClassificationEvaluator()
@@ -126,11 +141,11 @@ object WangMendelAlgorithmExampleShuttle {
       new WangMendelAlgorithm()
         .setLabelCol(outputColumnIdx)
         .setPredictionCol("prediction")
-        .setNumFuzzyRegions(args(3).toInt)
+        .setNumFuzzyRegions(args(2).toInt)
 
     // cross validation
     val paramGrid =
-      new ParamGridBuilder().addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(args(3).toInt)).build()
+      new ParamGridBuilder().addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(args(2).toInt)).build()
 
     val cv =
       new CrossValidator()
@@ -152,17 +167,17 @@ object WangMendelAlgorithmExampleShuttle {
     val cvModel: CrossValidatorModel = cv.fit(dataFrameOfPaths)
 
     cvModel.metrictsAsString.foreach(println)
-    spark.sparkContext.parallelize(cvModel.metrictsAsString, 1).saveAsTextFile(args(2))
+    spark.sparkContext.parallelize(cvModel.metrictsAsString, 1).saveAsTextFile(args(3))
 
-  println("Spark job finished")
+    println("Spark job finished")
 
-  spark.stop()
+    spark.stop()
 
   }
 
 
   def generatePaths(basePath: String, dataSetName: String, nFolds: Int): Array[(String, String)] =
-    (1 to nFolds ).map { n =>
+    (1 to nFolds).map { n =>
       val base = s"$basePath$dataSetName-$nFolds-$n"
       (s"${base}tra.dat", s"${base}tst.dat")
     }.toArray

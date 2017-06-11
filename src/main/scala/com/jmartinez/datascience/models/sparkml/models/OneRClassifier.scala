@@ -106,7 +106,7 @@ final class OneRClassifierModel(override val uid: String, val rule: OneRule)
   override def transform(dataset: Dataset[_]): DataFrame = {
 
     val classifyInstance = udf { (instanceFeatures: Vector) =>
-      val attributeValueToClassify = instanceFeatures(rule.attribute.index.get)
+      val attributeValueToClassify: Double = instanceFeatures(rule.attribute.index.get)
 
       rule.predictedLabelAttribute(attributeValueToClassify)
     }
@@ -194,7 +194,7 @@ final class OneRClassifier(override val uid: String)
 
     }
 
-    val betterRule = output.maxBy(_.totalScore)
+    val betterRule: OneRule = output.maxBy(_.totalScore)
 
     val model = new OneRClassifierModel(uid, betterRule)
 

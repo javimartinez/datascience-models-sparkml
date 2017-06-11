@@ -70,7 +70,7 @@ object OneRClassifierExample {
 
     val indexedDataset = prepareDataPipeline.fit(dataDF).transform(dataDF).cache()
 
-    val onerR =
+    val onerR: OneRClassifier =
       new OneRClassifier()
         .setLabelCol("idx_Class")
         .setFeaturesCol("indexedFeatures")
