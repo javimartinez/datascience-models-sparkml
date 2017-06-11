@@ -26,7 +26,7 @@ trait OneRConfig {
   val pipelineToTransform: Pipeline
   val algorithm: String
   val dataSetName: String
-  val basePath: String = s"${pathDataFolder}/${dataSetName}-5-fold/"
-  val pathResult: String = s"${pathResultFolder}/${dataSetName}_result_$algorithm"
   val numPartitions: Int
+  val pathResult: String
+  val basePath: String
 }

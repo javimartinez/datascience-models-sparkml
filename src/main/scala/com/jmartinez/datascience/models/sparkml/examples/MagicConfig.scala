@@ -24,6 +24,9 @@ class MagicConfig(val pathDataFolder: String, val pathResultFolder: String, val 
 
   override val dataSetName: String = "magic"
 
+  override val pathResult: String = s"$pathResultFolder/$dataSetName-result-$algorithm"
+  override val basePath: String = s"$pathDataFolder/$dataSetName-5-fold/"
+
   override val outputColumn: String = "Class"
   override val outputColumnIdx: String = "Class_idx"
 
