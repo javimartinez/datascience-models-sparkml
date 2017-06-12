@@ -55,7 +55,7 @@ object OneRTrain {
         .setEstimatorParamMaps(paramGrid)
         .setTransformator(config.pipelineToTransform)
         .setNumFolds(5)
-        .setNumPartitions(10)
+        .setNumPartitions(config.numPartitions)
 
     val dataFrameOfPaths = {
       val rdd = spark.sparkContext.parallelize(generatePaths(config.basePath, config.dataSetName, 5).map {

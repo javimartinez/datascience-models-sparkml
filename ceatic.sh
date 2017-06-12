@@ -16,11 +16,11 @@ $SPARK_HOME/bin/spark-submit \
   --class com.jmartinez.datascience.models.sparkml.examples.OneRClassifierExample \
   --master spark://login.turing.ceatic.ujaen.es:6066 \
   --deploy-mode cluster \
-  --num-executors 1 \
+  --conf "spark.cores.max=10" --conf "spark.executor.cores=10"
   /home/simidat/jmj000017/datascience-models-sparkml-assembly-0.0.1-SNAPSHOT.jar \
-  spark://login.turing.ceatic.ujaen.es:6066 /home/simidat/jmj000017/data /home/simidat/jmj000017/resultOneR oneR 10
+  spark://login.turing.ceatic.ujaen.es:6066 /home/simidat/jmj000017/data /home/simidat/jmj000017/resultOneR/1 oneR 10
 
-   --conf "spark.executor.memory=10g"\
+
 
 
 
