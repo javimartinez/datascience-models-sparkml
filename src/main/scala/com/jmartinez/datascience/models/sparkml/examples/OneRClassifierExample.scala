@@ -35,8 +35,8 @@ object OneRClassifierExample {
     Logger.getLogger("akka").setLevel(Level.OFF)
 
     implicit val spark =
-      SparkSession.builder.appName("WangMendelAlgorithm")
-        .master(args(0))
+      SparkSession.builder.appName("OneR")
+//        .master(args(0))
         .getOrCreate()
 
     oneRTrain(new Connect4Config(args(1), args(2), args(3), args(4).toInt))
