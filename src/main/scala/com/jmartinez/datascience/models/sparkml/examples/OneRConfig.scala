@@ -27,6 +27,7 @@ trait OneRConfig {
   val algorithm: String
   val dataSetName: String
   val numPartitions: Int
-  val pathResult: String
-  val basePath: String
+  def pathResult: String = s"$pathResultFolder/$dataSetName-result-$algorithm"
+  def basePath: String = s"$pathDataFolder/$dataSetName-5-fold/"
+
 }

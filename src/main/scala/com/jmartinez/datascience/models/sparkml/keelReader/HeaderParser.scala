@@ -41,11 +41,11 @@ object HeaderParser extends BasicsParser {
   val numericAttribute: Parser[KeelAttribute] = P(
     "@attribute" ~ whiteSpaces ~ attributeName ~ whiteSpaces ~ attributeType ~ whiteSpaces ~ squareBrackedBlock(
       double) ~ End) // TODO: workaround
-  .map {
+    .map {
     case (atname, atType, vector) =>
       atType match {
         case "integer" => NumericAttribute(atname, vector(0), vector(1))
-        case "real"    => NumericAttribute(atname, vector(0), vector(1))
+        case "real" => NumericAttribute(atname, vector(0), vector(1))
       }
   }
 
@@ -55,6 +55,6 @@ object HeaderParser extends BasicsParser {
 
   val outputParser = P("@outputs" ~ whiteSpaces ~ CharIn('a' to 'z').!)
 
-  val keelHeaderParser: Parser[KeelAttribute] = P(nominalAttribute | numericAttribute).log()
+  val keelHeaderParser: Parser[KeelAttribute] = P(nominalAttribute | numericAttribute)
 
 }

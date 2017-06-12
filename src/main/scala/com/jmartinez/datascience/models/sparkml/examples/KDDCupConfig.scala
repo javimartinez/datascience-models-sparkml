@@ -24,7 +24,7 @@ class KDDCupConfig(val pathDataFolder: String, val pathResultFolder: String, val
 
   override val outputColumn: String = "Class"
   override val outputColumnIdx = "idx_Class"
-  override val dataSetName: String = ???
+  override val dataSetName: String = "kddcup"
 
 
   //KDDCup

@@ -64,9 +64,7 @@ object KeelReader {
       case Parsed.Success(keelAttribute, _) =>
         keelAttribute match {
           case att:NominalAttribute =>
-            println(att.name)
           case att:NumericAttribute =>
-            println(att.name)
         }
         keelAttribute
       case Parsed.Failure(_, _, extraFailure) =>
