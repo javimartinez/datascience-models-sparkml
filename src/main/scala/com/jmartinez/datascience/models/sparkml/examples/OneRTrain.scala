@@ -27,7 +27,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 
 object OneRTrain {
 
-  def oneRTrain(config: OneRConfig)(implicit spark: SparkSession): Unit = {
+  def oneRTrain(config: Config)(implicit spark: SparkSession): Unit = {
 
     println(s"OneR for dataset ${config.dataSetName} start")
 

@@ -18,7 +18,7 @@ package com.jmartinez.datascience.models.sparkml.examples
 
 import org.apache.spark.ml.Pipeline
 
-trait OneRConfig {
+trait Config {
   val outputColumn: String
   val outputColumnIdx: String
   val pathDataFolder: String
@@ -27,7 +27,9 @@ trait OneRConfig {
   val algorithm: String
   val dataSetName: String
   val numPartitions: Int
+
   def pathResult: String = s"$pathResultFolder/$dataSetName-result-$algorithm"
+
   def basePath: String = s"$pathDataFolder/$dataSetName-5-fold/"
 
 }

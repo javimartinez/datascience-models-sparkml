@@ -20,7 +20,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 
 
-class ShuttleConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends OneRConfig {
+class ShuttleConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends Config {
 
 
   val columnsToStringIndex = (1 to 9).map(x => s"A${x}").toArray

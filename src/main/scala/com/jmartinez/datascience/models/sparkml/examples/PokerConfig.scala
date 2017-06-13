@@ -20,7 +20,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 
 
-class PokerConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends OneRConfig {
+class PokerConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends Config {
   //Poker
   //     val inputsColumns =
   //     val ouputColumn =

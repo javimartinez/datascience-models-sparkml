@@ -175,17 +175,4 @@ object WangMendelAlgorithmExampleShuttle {
 
   }
 
-
-  def generatePaths(basePath: String, dataSetName: String, nFolds: Int): Array[(String, String)] =
-    (1 to nFolds).map { n =>
-      val base = s"$basePath$dataSetName-$nFolds-$n"
-      (s"${base}tra.dat", s"${base}tst.dat")
-    }.toArray
-
-  def generateSchema(schemaString: String): StructType = {
-    // Generate the schema based on the string of schema
-    val fields =
-      schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = true))
-    StructType(fields)
-  }
 }

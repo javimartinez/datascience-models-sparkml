@@ -16,15 +16,14 @@
 
 package com.jmartinez.datascience.models.sparkml.examples
 
-import com.jmartinez.datascience.models.sparkml.keelReader.KeelReader._
 import com.jmartinez.datascience.models.sparkml.models.WangMendelAlgorithm
-import org.apache.log4j.{ Level, Logger }
+import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.{CrossValidator, CrossValidatorModel, Pipeline}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
-import org.apache.spark.ml.feature.{ StringIndexer, VectorAssembler }
-import org.apache.spark.mllib.evaluation.RegressionMetrics
-import org.apache.spark.sql.{ DataFrame, SparkSession }
+import org.apache.spark.ml.tuning.ParamGridBuilder
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 object WangMendelAlgorithmExample {
 
@@ -47,86 +46,61 @@ object WangMendelAlgorithmExample {
 
     logger.info("Wang&Mendel pipeline starts")
 
-    val trainData =
-      //            spark.keelFile("/Users/Javi/development/data/poker.dat")
-      spark.keelFile("/workspace/data/poker-5-1tra.dat",10)
 
-    val testData =
-      spark.keelFile("/workspace/data/poker-5-1tst.dat",10)
+    println("Spark job finished")
+  }
 
-    val assembler =
-      new VectorAssembler().setInputCols(trainData.columns.dropRight(1)).setOutputCol("features")
+  def WMTrain(config: Config)(implicit spark: SparkSession): List[String] = {
 
-    val stringIndexer = new StringIndexer().setInputCol("Class").setOutputCol("idx_Class")
-
-    val pipelineToTransform = new Pipeline().setStages(Array(assembler, stringIndexer))
-
-    val tranformedTrainData: DataFrame =
-      pipelineToTransform.fit(trainData).transform(trainData)
-
-    val transformedTestData: DataFrame = pipelineToTransform.fit(testData).transform(testData)
 
     val evaluator = new MulticlassClassificationEvaluator()
-      .setLabelCol("idx_Class")
+      .setLabelCol(config.outputColumnIdx)
       .setPredictionCol("prediction")
       .setMetricName("accuracy")
 
     val wangMendelAlgorithm =
       new WangMendelAlgorithm()
-        .setLabelCol("idx_Class")
+        .setLabelCol(config.outputColumnIdx)
         .setPredictionCol("prediction")
-        .setNumFuzzyRegions(3)
+        .setNumFuzzyRegions(5)
 
-    val result = wangMendelAlgorithm.fit(tranformedTrainData).transform(tranformedTrainData)
+    // cross validation
+    val paramGrid =
+      new ParamGridBuilder().addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(5)).build()
 
-    //cross validation
-    //    val paramGrid = new ParamGridBuilder()
-    //      .addGrid(wangMendelAlgorithm.numFuzzyRegions, Array(1, 2, 3))
-    //      .build()
+    val cv =
+      new CrossValidator()
+        .setEstimator(new Pipeline().setStages(Array(wangMendelAlgorithm)))
+        .setEvaluator(evaluator)
+        .setEstimatorParamMaps(paramGrid)
+        .setTransformator(config.pipelineToTransform)
+        .setNumFolds(5)
+        .setNumPartitions(config.numPartitions)
 
-    //    val cv: CrossValidator = new CrossValidator()
-    //      .setEstimator(new Pipeline().setStages(Array(wangMendelAlgorithm)))
-    //      .setEvaluator(evaluator)
-    //      .setEstimatorParamMaps(paramGrid)
-    //      .setNumFolds(2)
-    //
-    //
-    //    val betterModel: CrossValidatorModel = cv.fit(tranformedTrainData)
-    //
-    //    betterModel.avgMetrics.foreach(println)
+    val dataFrameOfPaths = {
+      val rdd = spark.sparkContext.parallelize(generatePaths(config.basePath, config.dataSetName, 5).map {
+        case (trainFile, testFile) =>
+          Row(trainFile, testFile)
+      })
+      spark.createDataFrame(rdd, generateSchema("trainPath testPath"))
+    }
 
-    //    val result =
-    //      new Pipeline().setStages(Array(wangMendelAlgorithm)).fit(trainData)
-    //        .transform(testData)
+    val cvModel: CrossValidatorModel = cv.fit(dataFrameOfPaths)
 
-    //    println(result.count())
-
-    //
-
-    val accuracy = evaluator.evaluate(result)
-    println(s"The accuracy is: ${accuracy * 100}")
-    println(s"The simple error is: ${(1 - accuracy) * 100} ")
-
-    //    evaluateRegressionModel(result, "idx_Class", "prediction")
-
-    println("Spark job finished")
+    cvModel.metrictsAsString
+    //    spark.sparkContext.parallelize(cvModel.metrictsAsString, 1).saveAsTextFile(config.pathResultFolder)
   }
 
-  private def evaluateRegressionModel(
-      data: DataFrame,
-      labelColName: String,
-      predictionLabel: String
-  ): Unit = {
-    val predictions = data.select(predictionLabel).rdd.map(_.getDouble(0))
-    val labels      = data.select(labelColName).rdd.map(_.getDouble(0))
-    val RMSE        = new RegressionMetrics(predictions.zip(labels)).meanSquaredError
-    println(s"Root mean squared error (RMSE): $RMSE")
+  def generatePaths(basePath: String, dataSetName: String, nFolds: Int): Array[(String, String)] =
+    (1 to nFolds).map { n =>
+      val base = s"$basePath$dataSetName-$nFolds-$n"
+      (s"${base}tra.dat", s"${base}tst.dat")
+    }.toArray
+
+  def generateSchema(schemaString: String): StructType = {
+    // Generate the schema based on the string of schema
+    val fields =
+      schemaString.split(" ").map(fieldName => StructField(fieldName, StringType, nullable = true))
+    StructType(fields)
   }
-
-  private def splitDataInToTrainAndTest(data: DataFrame): (DataFrame, DataFrame) = {
-    val splits = data.randomSplit(Array(0.6, 0.4), 12345)
-
-    (splits(0), splits(1))
-  }
-
 }

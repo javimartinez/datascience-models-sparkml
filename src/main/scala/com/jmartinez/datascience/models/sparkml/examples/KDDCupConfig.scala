@@ -19,13 +19,12 @@ package com.jmartinez.datascience.models.sparkml.examples
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{Bucketizer, StringIndexer, VectorAssembler}
 
-class KDDCupConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends OneRConfig {
+class KDDCupConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends Config {
 
 
   override val outputColumn: String = "Class"
   override val outputColumnIdx = "idx_Class"
   override val dataSetName: String = "kddcup"
-
 
   //KDDCup
   private val columnsToBucked = Array(
@@ -93,9 +92,6 @@ class KDDCupConfig(val pathDataFolder: String, val pathResultFolder: String, val
       /*Atr-39*/ basicSplit,
       /*Atr-40*/ basicSplit
     )
-
-  println("columnsToBucked" + columnsToBucked.length)
-  println("splits" + splits.length)
 
   private val bucketizers: Array[Bucketizer] = columnsToBucked.zipWithIndex.map {
     case (c, i) =>
