@@ -20,7 +20,7 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.{Bucketizer, StringIndexer, VectorAssembler}
 
 
-class MagicConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends Config {
+class MagicOneRConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends Config {
 
   override val dataSetName: String = "magic"
 

@@ -16,14 +16,15 @@
 
 package com.jmartinez.datascience.models.sparkml.examples
 
-import com.jmartinez.datascience.models.sparkml.models.WangMendelAlgorithm
 import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.ml.{CrossValidator, CrossValidatorModel, Pipeline}
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.tuning.ParamGridBuilder
-import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.ml.{CrossValidator, CrossValidatorModel, Pipeline}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.{Row, SparkSession}
+import com.jmartinez.datascience.models.sparkml.models.WangMendelAlgorithm
+import com.jmartinez.datascience.models.sparkml.wmconfig.{MagicWMConfig, ShuttleWMConfig}
 
 object WangMendelAlgorithmExample {
 
@@ -38,7 +39,7 @@ object WangMendelAlgorithmExample {
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
 
-    val spark =
+    implicit val spark =
       SparkSession.builder
         .appName("WangMendelAlgorithm")
         //                .master("local[4]")
@@ -46,6 +47,14 @@ object WangMendelAlgorithmExample {
 
     logger.info("Wang&Mendel pipeline starts")
 
+    val resultPoker: List[String] = "Resultados Poker \\n" +: WMTrain(new PokerConfig(args(1), args(2), args(3), args(4).toInt))
+    val resultMagic: List[String] = "Resultados Magic \\n" +: WMTrain(new MagicWMConfig(args(1), args(2), args(3), args(4).toInt))
+    val resultShuttle: List[String] = "Resultados Shutlle \\n" +: WMTrain(new ShuttleWMConfig(args(1), args(2), args(3), args(4).toInt))
+    val resultConnect4: List[String] = "Resultados Connect-4 \\n" +: WMTrain(new Connect4Config(args(1), args(2), args(3), args(4).toInt))
+    val resultKddcup: List[String] = "Resultados KDDcup \\n" +: WMTrain(new Connect4Config(args(1), args(2), args(3), args(4).toInt))
+
+    spark.sparkContext.parallelize(resultPoker ++ resultMagic ++ resultShuttle ++ resultConnect4 ++ resultKddcup, 1)
+      .saveAsTextFile(args(2))
 
     println("Spark job finished")
   }

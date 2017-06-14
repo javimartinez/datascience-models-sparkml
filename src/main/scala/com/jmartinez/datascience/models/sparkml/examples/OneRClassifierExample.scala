@@ -43,6 +43,6 @@ object OneRClassifierExample {
     oneRTrain(new KDDCupConfig(args(1), args(2), args(3), args(4).toInt))
     oneRTrain(new PokerConfig(args(1), args(2), args(3), args(4).toInt))
     oneRTrain(new ShuttleConfig(args(1), args(2), args(3), args(4).toInt))
-    oneRTrain(new MagicConfig(args(1), args(2), args(3), args(4).toInt))
+    oneRTrain(new MagicOneRConfig(args(1), args(2), args(3), args(4).toInt))
   }
 }
