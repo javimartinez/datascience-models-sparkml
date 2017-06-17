@@ -28,16 +28,17 @@ class PokerWMConfig(val pathDataFolder: String, val pathResultFolder: String, va
   override val outputColumnIdx: String = "idx_Class"
   override val dataSetName: String = "poker"
 
-  val inputsColumns = Array("S1", "C1", "S2", "C2", "S3", "C3", "S4", "C4", "S5", "C5")
+  val inputsColumnsOrigin = Array("S1", "C1", "S2", "C2", "S3", "C3", "S4", "C4", "S5", "C5")
 
+  val inputsColumns = inputsColumnsOrigin.map { str => s"${str}_idx" }
   val assembler =
-    new VectorAssembler().setInputCols(inputsColumns).setOutputCol("features")
+    new VectorAssembler().setInputCols(inputsColumnsOrigin).setOutputCol("features")
 
   val stringIndexerLabel =
     new StringIndexer().setInputCol(outputColumn).setOutputCol(outputColumnIdx)
 
-
+//
   val pipelineToTransform =
-    new Pipeline().setStages(Array(assembler, stringIndexerLabel))
+    new Pipeline().setStages( Array(assembler, stringIndexerLabel))
 
 }

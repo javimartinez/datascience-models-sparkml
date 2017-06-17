@@ -17,7 +17,7 @@
 package com.jmartinez.datascience.models.sparkml.examples
 
 import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.feature.{Bucketizer, StringIndexer, VectorAssembler}
+import org.apache.spark.ml.feature.{Bucketizer, StringIndexer, StringIndexerCustom$, VectorAssembler}
 
 
 class MagicOneRConfig(val pathDataFolder: String, val pathResultFolder: String, val algorithm: String, val numPartitions: Int) extends Config {

@@ -16,28 +16,17 @@
 
 package com.jmartinez.datascience.models.sparkml.models
 
-import com.jmartinez.datascience.models.sparkml.Fuzzy.{
-  FuzzyPartition,
-  FuzzyRegionSingleton,
-  FuzzyRule
-}
+import com.jmartinez.datascience.models.sparkml.Fuzzy.{FuzzyPartition, FuzzyRegionSingleton, FuzzyRule}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml._
-import org.apache.spark.ml.attribute.{
-  Attribute,
-  AttributeGroup,
-  NominalAttribute,
-  NumericAttribute
-}
-import org.apache.spark.ml.linalg.DenseVector
+import org.apache.spark.ml.attribute.{Attribute, AttributeGroup, NominalAttribute, NumericAttribute}
+import org.apache.spark.ml.linalg.{DenseVector, SparseVector, Vector}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
-import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{ DoubleType, StructField, StructType }
-import org.apache.spark.sql.{ Dataset, Row }
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
+import org.apache.spark.sql.{Dataset, Row}
 
 object WangMendelUtils {
 
@@ -56,13 +45,8 @@ object WangMendelUtils {
     tnorm(degrees)
   }
 
-  // hacer una funcion para unir el degree de los antecedentes con el degree del consequente.
-  // La funcion de membresia puede ser otra que no sea triangular -> eso implica mucho cambio, merece la pena??
-  // la funcion de create Fuzzy partition tambien puede cambiar !! OOOMYGoooddd
-
   def tnorm(degrees: Array[Double]): Double = degrees.product
 
-  // for now
   def tnorm(x: Double, y: Double): Double = x * y
 
   // deffuzzy method Weighted average method
@@ -92,7 +76,7 @@ final class WangMendelModel(
     val ruleBase: Array[FuzzyRule],
     val fuzzyPartitionsFeatures: Array[FuzzyPartition],
     val fuzzyPartitionsLabel: FuzzyPartition
-) extends PredictionModel[DenseVector, WangMendelModel] {
+) extends PredictionModel[Vector, WangMendelModel] {
 
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = {
@@ -106,9 +90,9 @@ final class WangMendelModel(
     copyValues(copied, extra).setParent(parent)
   }
 
-  override protected def predict(features: DenseVector): Double = {
+  override protected def predict(features: Vector): Double = {
 
-    val arrayAcc = Array.fill[Double](10) { // TODO: Horrible!!!!
+    val arrayAcc = Array.fill[Double](30) { // TODO: Horrible!!!!
       0.0
     }
 
@@ -132,7 +116,7 @@ final class WangMendelModel(
 }
 
 final class WangMendelAlgorithm(override val uid: String)
-    extends Predictor[DenseVector, WangMendelAlgorithm, WangMendelModel]
+    extends Predictor[Vector, WangMendelAlgorithm, WangMendelModel]
     with WangMendelParams {
 
   def this() = this(Identifiable.randomUID("Wang&Mendel"))
@@ -151,8 +135,12 @@ final class WangMendelAlgorithm(override val uid: String)
 
   override protected def train(dataset: Dataset[_]): WangMendelModel = {
 
+    println(dataset.schema($(featuresCol)))
+
     val datasetRdd = dataset.select($(featuresCol), $(labelCol)).rdd.map {
       case (Row(features: DenseVector, label: Double)) =>
+        (features.toArray, label)
+      case (Row(features: SparseVector, label: Double)) =>
         (features.toArray, label)
     }
 
@@ -169,7 +157,7 @@ final class WangMendelAlgorithm(override val uid: String)
     val fuzzyPartitionsOfFeatures: Array[FuzzyPartition] = features.map {
       case att: NumericAttribute =>
         FuzzyPartition(att.min.get, att.max.get, $(numFuzzyRegions)) // create fuzzy partition
-      case _ => throw new Exception("Not supported aqui 1")
+      case att => throw new Exception(s"Not supported aqui 1 $att")
     }
 
     val fuzzyPartitionsOfLabel: FuzzyPartition =

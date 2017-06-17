@@ -10,5 +10,9 @@ zipextension='.zip'
 cd /Users/Javi/development/experimentos_keel
 unzip $1${zipextension}
 cd $1/scripts
-java -jar RunKeel.jar
+touch result.txt
+touch times.txt
+java -jar RunKeel.jar > result.txt
+grep "Execution Time:" result.txt > times.txt
+sublime times.txt
 fi
