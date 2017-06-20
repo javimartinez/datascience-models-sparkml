@@ -16,17 +16,26 @@
 
 package com.jmartinez.datascience.models.sparkml.models
 
-import com.jmartinez.datascience.models.sparkml.Fuzzy.{FuzzyPartition, FuzzyRegionSingleton, FuzzyRule}
+import com.jmartinez.datascience.models.sparkml.Fuzzy.{
+  FuzzyPartition,
+  FuzzyRegionSingleton,
+  FuzzyRule
+}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml._
-import org.apache.spark.ml.attribute.{Attribute, AttributeGroup, NominalAttribute, NumericAttribute}
-import org.apache.spark.ml.linalg.{DenseVector, SparseVector, Vector}
+import org.apache.spark.ml.attribute.{
+  Attribute,
+  AttributeGroup,
+  NominalAttribute,
+  NumericAttribute
+}
+import org.apache.spark.ml.linalg.{ DenseVector, SparseVector, Vector }
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
-import org.apache.spark.sql.{Dataset, Row}
+import org.apache.spark.sql.types.{ DoubleType, StructField, StructType }
+import org.apache.spark.sql.{ Dataset, Row }
 
 object WangMendelUtils {
 
@@ -61,13 +70,16 @@ object WangMendelUtils {
 
     val attributesIndex = attributes.flatMap(_.index) // no me asegura que esten todos los atributos BroadCast??
 
-    dataset.flatMap {
-      case (Row(features: Vector, _)) => //vectorUDT
-        attributesIndex.map(idx => (idx, (features(idx), features(idx))))
-    }.reduceByKey {
-      case ((elemToMax1, elemToMin1), (elemToMax2, elemToMin2)) =>
-        (scala.math.max(elemToMax1, elemToMax2), scala.math.min(elemToMin1, elemToMin2))
-    }.collect
+    dataset
+      .flatMap {
+        case (Row(features: Vector, _)) => //vectorUDT
+          attributesIndex.map(idx => (idx, (features(idx), features(idx))))
+      }
+      .reduceByKey {
+        case ((elemToMax1, elemToMin1), (elemToMax2, elemToMin2)) =>
+          (scala.math.max(elemToMax1, elemToMax2), scala.math.min(elemToMin1, elemToMin2))
+      }
+      .collect
   }
 }
 
@@ -135,8 +147,6 @@ final class WangMendelAlgorithm(override val uid: String)
 
   override protected def train(dataset: Dataset[_]): WangMendelModel = {
 
-    println(dataset.schema($(featuresCol)))
-
     val datasetRdd = dataset.select($(featuresCol), $(labelCol)).rdd.map {
       case (Row(features: DenseVector, label: Double)) =>
         (features.toArray, label)
@@ -157,7 +167,8 @@ final class WangMendelAlgorithm(override val uid: String)
     val fuzzyPartitionsOfFeatures: Array[FuzzyPartition] = features.map {
       case att: NumericAttribute =>
         FuzzyPartition(att.min.get, att.max.get, $(numFuzzyRegions)) // create fuzzy partition
-      case att => throw new Exception(s"Not supported aqui 1 $att")
+      case att: NominalAttribute =>
+        FuzzyPartition(att.values.getOrElse(throw new Exception("Not supported aqui 2 ")).length)
     }
 
     val fuzzyPartitionsOfLabel: FuzzyPartition =
@@ -166,9 +177,9 @@ final class WangMendelAlgorithm(override val uid: String)
         case att: NumericAttribute =>
           FuzzyPartition(att.max.get.toInt)
         case att: NominalAttribute =>
-          FuzzyPartition(att.values.getOrElse(throw new Exception("Not supported aqui 2 ")).length)
+          FuzzyPartition(att.values.getOrElse(throw new Exception("Not supported aqui 3 ")).length)
         case att =>
-          throw new Exception("Not supported aqui 3")
+          throw new Exception("Not supported aqui 4")
       }
 
     // MEJOR SE PUEDE UNIR EN UN SOLO ARRAY[FUZZYPARTITION] Y CON EL INDEX SABER SI ES DE FEATURES O LABEL
@@ -177,10 +188,12 @@ final class WangMendelAlgorithm(override val uid: String)
     // Step 3: Assign degree for each rule
     // Step 4: Create a Combined Fuzzy Rule Base
 
-    val ruleBase = datasetRdd.map {
-      case (features: Array[Double], label: Double) =>
-        generateFuzzyRule(features, label, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
-    }.map(fuzzyRule => (fuzzyRule.getLabelsOfAntecedentsCodified, fuzzyRule))
+    val ruleBase = datasetRdd
+      .map {
+        case (features: Array[Double], label: Double) =>
+          generateFuzzyRule(features, label, fuzzyPartitionsOfFeatures, fuzzyPartitionsOfLabel)
+      }
+      .map(fuzzyRule => (fuzzyRule.getLabelsOfAntecedentsCodified, fuzzyRule))
       .reduceByKey {
         // in conflict rules choose the rule with maximum degree
         case (fuzzyRule1: FuzzyRule, fuzzyRule2: FuzzyRule) =>

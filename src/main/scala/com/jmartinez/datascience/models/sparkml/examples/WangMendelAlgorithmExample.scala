@@ -62,15 +62,16 @@ object WangMendelAlgorithmExample {
     resultPoker.foreach(println)
 
 
+    val resultKddcup: List[String] = "Resultados KDDcup \\n" +: WMTrain(new KDDCupWMConfig(args(1), args(2), args(3), args(4).toInt))
+    println("Resultados KDDcup")
+    resultKddcup.foreach(println)
+
     val resultConnect4: List[String] = "Resultados Connect-4 \\n" +: WMTrain(new Connect4WMConfig(args(1), args(2), args(3), args(4).toInt))
     println("Resultados connect 4")
     resultConnect4.foreach(println)
 
-    val resultKddcup: List[String] = "Resultados KDDcup \\n" +: WMTrain(new KDDCupWMConfig(args(1), args(2), args(3), args(4).toInt))
-    println("Resultados KDDcup")
-
-    spark.sparkContext.parallelize(resultPoker ++ resultMagic ++ resultShuttle ++ resultConnect4 ++ resultKddcup, 1)
-      .saveAsTextFile(args(2))
+//    spark.sparkContext.parallelize(resultPoker ++ resultMagic ++ resultShuttle ++ resultConnect4 ++ resultKddcup, 1)
+//      .saveAsTextFile(args(2))
 
     println("Spark job finished")
 
