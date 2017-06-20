@@ -33,7 +33,6 @@ class Connect4WMConfig(val pathDataFolder: String,
 
   private val inputsColumns: Array[String] = columnsToStringIndex.map(str => s"${str}_b").toArray
 
-  inputsColumns.foreach(println)
 
   override val outputColumn    = "Class"
   override val outputColumnIdx = "idx_Class"

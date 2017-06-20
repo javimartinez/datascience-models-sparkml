@@ -24,7 +24,7 @@ import org.apache.spark.ml.{CrossValidator, CrossValidatorModel, Pipeline}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 import com.jmartinez.datascience.models.sparkml.models.WangMendelAlgorithm
-import com.jmartinez.datascience.models.sparkml.wmconfig.{Connect4WMConfig, MagicWMConfig, PokerWMConfig, ShuttleWMConfig}
+import com.jmartinez.datascience.models.sparkml.wmconfig._
 
 object WangMendelAlgorithmExample {
 
@@ -47,17 +47,33 @@ object WangMendelAlgorithmExample {
 
     logger.info("Wang&Mendel pipeline starts")
 
-    val resultPoker: List[String] = "Resultados Poker \\n" +: WMTrain(new PokerWMConfig(args(1), args(2), args(3), args(4).toInt))
+
     val resultMagic: List[String] = "Resultados Magic \\n" +: WMTrain(new MagicWMConfig(args(1), args(2), args(3), args(4).toInt))
+    println("Resultados Magic")
+    resultMagic.foreach(println)
+
     val resultShuttle: List[String] = "Resultados Shutlle \\n" +: WMTrain(new ShuttleWMConfig(args(1), args(2), args(3), args(4).toInt))
+    println("Resultados Shutlle")
+    resultShuttle.foreach(println)
+
+
+    val resultPoker: List[String] = "Resultados Poker \\n" +: WMTrain(new PokerWMConfig(args(1), args(2), args(3), args(4).toInt))
+    println("Resultados Poker")
+    resultPoker.foreach(println)
+
+
     val resultConnect4: List[String] = "Resultados Connect-4 \\n" +: WMTrain(new Connect4WMConfig(args(1), args(2), args(3), args(4).toInt))
-    val resultKddcup: List[String] = "Resultados KDDcup \\n" +: WMTrain(new Connect4Config(args(1), args(2), args(3), args(4).toInt))
+    println("Resultados connect 4")
+    resultConnect4.foreach(println)
+
+    val resultKddcup: List[String] = "Resultados KDDcup \\n" +: WMTrain(new KDDCupWMConfig(args(1), args(2), args(3), args(4).toInt))
+    println("Resultados KDDcup")
 
     spark.sparkContext.parallelize(resultPoker ++ resultMagic ++ resultShuttle ++ resultConnect4 ++ resultKddcup, 1)
       .saveAsTextFile(args(2))
 
-    resultKddcup.foreach(println)
     println("Spark job finished")
+
   }
 
   def WMTrain(config: Config)(implicit spark: SparkSession): List[String] = {
@@ -101,7 +117,7 @@ object WangMendelAlgorithmExample {
   }
 
   def generatePaths(basePath: String, dataSetName: String, nFolds: Int): Array[(String, String)] =
-    (1 to 1).map { n =>
+    (1 to nFolds).map { n =>
       val base = s"$basePath$dataSetName-$nFolds-$n"
       (s"${base}tra.dat", s"${base}tst.dat")
     }.toArray
