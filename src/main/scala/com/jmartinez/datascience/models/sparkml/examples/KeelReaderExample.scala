@@ -41,6 +41,10 @@ object KeelReaderExample {
 
     println(s"The schema is: ${dataframe.schema.toString}")
 
+    println(s"The schema is: ${dataframe.schema.toString}")
+
+    println(s"The schema is: ${dataframe.schema.toString}")
+
     dataframe.show(20)
 
   }

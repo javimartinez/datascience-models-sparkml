@@ -44,8 +44,11 @@ object OneRClassifierExample {
     val spark =
       SparkSession.builder.appName("OneRClassifierExample").getOrCreate()
 
+    println("holaa!")
+
     // Crates a DataFrame
     val dataDF = spark.keelFile(args(0))
+
 
     // Transformer
 
